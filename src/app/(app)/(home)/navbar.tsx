@@ -1,14 +1,14 @@
 "use client";
 
 import { Poppins } from "next/font/google";
-import Link from "../../../node_modules/next/link";
 
 import {cn} from "@/lib/utils"
 import { Button } from "@/components/ui/button";
-import { usePathname } from "../../../node_modules/next/navigation";
 import { NavbarSidebar } from "./navbar-sidebar";
 import { useState } from "react";
 import { MenuIcon } from "lucide-react";
+import Link from "../../../../node_modules/next/link";
+import { usePathname } from "../../../../node_modules/next/navigation";
 
 const poppins = Poppins({
     subsets: ["latin"],
