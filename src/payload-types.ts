@@ -6,7 +6,7 @@
  * and re-run `payload generate:types` to regenerate this file.
  */
 
-export interface Config {
+ export interface Config {
   auth: {
     users: UserAuthOperations;
   };
@@ -15,6 +15,7 @@ export interface Config {
     media: Media;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
+    categories: Categories; // Add categories here
   };
   db: {
     defaultIDType: string;
@@ -115,12 +116,21 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Categories {
+  id: string;
+  name: string; // Based on your Categories.ts field
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
   [k: string]: unknown;
 }
-
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}
