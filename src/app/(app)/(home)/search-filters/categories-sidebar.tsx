@@ -21,7 +21,7 @@ export const CategoriesSidebar = ({
     data,
 }: Props) => {
     const [parentCategories, setParentCategories] = useState<CustomCategory[] | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<CustomCategor | null>(null); 
+    const [selectedCategory, setSelectedCategory] = useState<CustomCategory | null>(null); 
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
