@@ -1,9 +1,9 @@
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import { Categories } from "@/payload-types";
 import Link from "../../../../../node_modules/next/link";
-import { CustomCategory } from "../types";
 
 interface Props {
-    category: CustomCategory;
+    category: CategoriesGetManyOutput[1];
     isOpen: boolean;
     position: { top: number; left: number };
 }

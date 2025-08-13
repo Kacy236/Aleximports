@@ -3,13 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
-import { CustomCategory } from "../types";
 import { CategoryDropdown } from "./category-dropdown";
 import { ListFilterIcon } from "lucide-react";
 import { CategoriesSidebar } from "./categories-sidebar";
+import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
 interface Props {
-    data: CustomCategory[];
+    data: CategoriesGetManyOutput;
 };
 
 export const Category = ({ data }: Props) => {
