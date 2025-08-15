@@ -15,7 +15,7 @@
     media: Media;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
-    categories: Categories; // Add categories here
+    categories: Categories;
   };
   db: {
     defaultIDType: string;
@@ -26,6 +26,7 @@
     collection: 'users';
   };
 }
+
 export interface UserAuthOperations {
   forgotPassword: {
     email: string;
@@ -44,10 +45,7 @@ export interface UserAuthOperations {
     password: string;
   };
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "users".
- */
+
 export interface User {
   id: string;
   updatedAt: string;
@@ -60,11 +58,10 @@ export interface User {
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password?: string | null;
+  username: string; // Manually added
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
+
+/* Rest of the file remains unchanged */
 export interface Media {
   id: string;
   alt: string;
@@ -80,10 +77,7 @@ export interface Media {
   focalX?: number | null;
   focalY?: number | null;
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-preferences".
- */
+
 export interface PayloadPreference {
   id: string;
   user: {
@@ -103,10 +97,7 @@ export interface PayloadPreference {
   updatedAt: string;
   createdAt: string;
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-migrations".
- */
+
 export interface PayloadMigration {
   id: string;
   name?: string | null;
@@ -114,20 +105,14 @@ export interface PayloadMigration {
   updatedAt: string;
   createdAt: string;
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
+
 export interface Categories {
   id: string;
-  name: string; // Based on your Categories.ts field
+  name: string;
   updatedAt: string;
   createdAt: string;
 }
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "auth".
- */
+
 export interface Auth {
   [k: string]: unknown;
 }
