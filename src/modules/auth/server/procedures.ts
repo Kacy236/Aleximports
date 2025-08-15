@@ -16,6 +16,10 @@ export const authRouter = createTRPCRouter({
 
        return session;
     }),
+    logout: baseProcedure.mutation(async () => {
+        const cookies = await getCookies();
+        cookies.delete(AUTH_COOKIE);
+    }),
     register: baseProcedure
       .input(
           z.object({
