@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/form";
 
 import { loginSchema } from "../../schemas";
-import { useTRPC } from "@/trpc/client";
+// import { useTRPC } from "@/trpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "../../../../../node_modules/next/navigation";
+import { trpc } from "@/trpc/server";
+import { useTRPC } from "@/trpc/client";
 
 
 const poppins = Poppins({
