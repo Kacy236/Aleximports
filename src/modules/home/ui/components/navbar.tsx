@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { NavbarSidebar } from "./navbar-sidebar";
 import { useState } from "react";
 import { MenuIcon } from "lucide-react";
-import Link from "../../../../node_modules/next/link";
-import { usePathname } from "../../../../node_modules/next/navigation";
+import Link from "../../../../../node_modules/next/link";
+import { usePathname } from "../../../../../node_modules/next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 

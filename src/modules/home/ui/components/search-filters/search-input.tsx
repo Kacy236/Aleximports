@@ -8,7 +8,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useTRPC } from "@/trpc/client"
 import { useQuery } from "@tanstack/react-query";
-import Link from "../../../../../node_modules/next/link";
+import Link from "../../../../../../node_modules/next/link";
 
 interface Props {
     disabled?: boolean;

@@ -1,6 +1,6 @@
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import { Categories } from "@/payload-types";
-import Link from "../../../../../node_modules/next/link";
+import Link from "../../../../../../node_modules/next/link";
 
 interface Props {
     category: CategoriesGetManyOutput[1];
