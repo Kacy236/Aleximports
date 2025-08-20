@@ -4,9 +4,15 @@ import { useTRPC } from "@/trpc/client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-export const ProductList = () => {
+interface Props {
+    category?: string;
+}
+
+export const ProductList = ({ category }: Props) => {
     const trpc = useTRPC();
-    const { data } = useSuspenseQuery(trpc.products.getMany.queryOptions());
+    const { data } = useSuspenseQuery(trpc.products.getMany.queryOptions({
+        category,
+    }));
 
     return(
         <div>
