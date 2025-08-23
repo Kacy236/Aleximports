@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
 import { useProductFilters } from "../../hooks/use-product-filters";
 import { PriceFilter } from "./price-filter";
+import { TagsFilter } from "./tags-filter";
 
 interface ProductFilterProps {
     title: string;
@@ -49,6 +50,7 @@ export const ProductFilters = () => {
         setFilters({
             minPrice: "",
             maxPrice: "",
+            tags: [],
         });
     }
 

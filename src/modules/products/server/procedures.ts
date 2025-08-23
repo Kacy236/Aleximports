@@ -11,6 +11,7 @@ export const productsRouter = createTRPCRouter({
         category: z.string().nullable().optional(),
         minPrice: z.string().nullable().optional(),
         maxPrice: z.string().nullable().optional(),
+        tags: z.array(z.string()).nullable().optional(),
     }),
   )
     .query(async ({ ctx, input }) => {
@@ -65,6 +66,12 @@ export const productsRouter = createTRPCRouter({
             where["category.slug"] = {
               in: [parentCategory.slug, ...subcategoriesSlugs]
           }
+        }
+      }
+
+      if (input.tags && input.tags.length > 0) {
+        where["tags.name"] = {
+          in: input.tags,
         }
       }
 
