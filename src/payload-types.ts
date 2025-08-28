@@ -16,6 +16,9 @@
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
     categories: Categories;
+    tenants: Tenants; // Added Tenants collection
+    products: Products; // Added Products collection
+    tags: Tags; // Added Tags collection
   };
   db: {
     defaultIDType: string;
@@ -58,10 +61,11 @@ export interface User {
   loginAttempts?: number | null;
   lockUntil?: string | null;
   password?: string | null;
-  username: string; // Manually added
+  username: string;
+  roles?: ('super-admin' | 'user')[] | null;
+  tenants?: { tenant: string | Tenants }[] | null; // Added tenants field
 }
 
-/* Rest of the file remains unchanged */
 export interface Media {
   id: string;
   alt: string;
@@ -111,6 +115,35 @@ export interface Categories {
   name: string;
   updatedAt: string;
   createdAt: string;
+  color?: string | null;
+  parent?: string | Categories | null;
+  tenants?: { tenant: string | Tenants }[] | null; // Added tenants field
+}
+
+export interface Tenants {
+  id: string;
+  name: string;
+  slug: string;
+  image?: string | Media | null; // Relationship to Media
+  stripeAccountId: string;
+  stripeDetailsSubmitted?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface Products {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  // Add other fields based on Products.ts
+  tenants?: { tenant: string | Tenants }[] | null; // Added due to multi-tenant plugin
+}
+
+export interface Tags {
+  id: string;
+  updatedAt: string;
+  createdAt: string;
+  // Add other fields based on Tags.ts
 }
 
 export interface Auth {
