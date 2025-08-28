@@ -1,0 +1,6 @@
+{
+    "imports": {
+      "@payloadcms/plugin-multi-tenant/client#TenantSelector": "./node_modules/@payloadcms/plugin-multi-tenant/dist/index.js",
+      "@payloadcms/plugin-multi-tenant/rsc#TenantSelectionProvider": "./node_modules/@payloadcms/plugin-multi-tenant/dist/index.js"
+    }
+  }
