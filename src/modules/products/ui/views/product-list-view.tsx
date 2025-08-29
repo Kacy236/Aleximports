@@ -6,9 +6,10 @@ import { ProductListSkeleton, ProductList } from "../components/product-list";
 
 interface Props {
     category?: string;
+    tenantSlug?: string;
 };
 
-export const ProductListView = ({ category }: Props) => {
+export const ProductListView = ({ category, tenantSlug }: Props) => {
     return (
         <div className="px-4 lg:px-12 py-8 flex flex-col gap-4">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-y-2 lg:gap-y-0 justify-between">
@@ -21,7 +22,7 @@ export const ProductListView = ({ category }: Props) => {
                     </div>
                     <div className="lg:col-span-4 xl:col-span-6">
                      <Suspense fallback={<ProductListSkeleton />}>
-                       <ProductList category={category} />
+                       <ProductList category={category} tenantSlug={tenantSlug} />
                      </Suspense>
                    </div>
               </div>
