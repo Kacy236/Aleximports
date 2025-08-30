@@ -38,20 +38,17 @@ export const useCartStore = create<CartState>()(
                            productIds: state.tenantCarts[tenantSlug]?.productIds.filter(
                                (id) => id !== productId
                            ) || [],
-                       }
-                   }
+                       },
+                   },
                })),
                clearCart: (tenantSlug) =>
                set((state) => ({
                    tenantCarts:{
                        ...state.tenantCarts,
                        [tenantSlug]: {
-                           productIds: [
-                               ...(state.tenantCarts[tenantSlug]?.productIds || []),
-                               productId,
-                           ]
-                       }
-                   }
+                           productIds: [],
+                       },
+                   },
                })),
                clearAllCarts: () =>
                set({
