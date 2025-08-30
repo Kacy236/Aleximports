@@ -22,7 +22,7 @@ export const StarRating = ({
 
     return (
         <div className={cn("flex items-center gap-x-1", className)}>
-            {Array.from({ lenght: MAX_RATING }).map((_, index)=> (
+            {Array.from({ length: MAX_RATING }).map((_, index)=> (
                 <StarIcon
                   key={index}
                   className={cn(
