@@ -4,6 +4,7 @@
 
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 import { LinkIcon, StarIcon } from "lucide-react";
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -12,7 +13,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
 import { Progress } from "@/components/ui/progress";
-import { CartButton } from "../components/cart-button";
+
+const CartButton = dynamic(
+    () => import("../components/cart-button").then(
+        (mod) => mod.CartButton,
+    ),
+    {
+        ssr: false,
+        loading: () => <Button disabled className="flex-1 bg-pink-400 ">Add to Cart</Button>
+    },
+);
 
 interface ProductViewProps {
     productId: string;
