@@ -2,11 +2,15 @@
 
 import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
+import { InboxIcon } from "lucide-react";
+
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { useCart } from "../../hooks/use-cart";
 import { generateTenantURL } from "@/lib/utils";
+import { CheckoutItem } from "../components/checkout-item";
+import { CheckoutSidebar } from "../components/checkout-sidebar";
 
 interface CheckoutViewProps {
     tenantSlug: string;
@@ -26,6 +30,15 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
             toast.warning("Invalid products found, cart cleared");
         }
     }, [error, clearAllCarts])
+
+    if (data?.totalDocs === 0) {
+        return (
+            <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
+                <InboxIcon />
+                <p className="text-base font-medium">No Products found</p>
+            </div>
+        );
+    }
     
     return (
         <div className="lg:pt-16 pt-4 px-4 lg:px-12">
@@ -36,7 +49,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                         {data?.docs.map((product, index) => (
                             <CheckoutItem
                               key={product.id}
-                              id={product.id}
                               isLast={index === data.docs.length - 1}
                               imageUrl={product.image?.url}
                               name={product.name}
@@ -51,7 +63,12 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 </div>
 
                 <div className="lg:col-span-3">
-                    Checkout sidebar
+                    <CheckoutSidebar
+                      total={data?.totalPrice}
+                      onCheckout={() => {}}
+                      isCanceled={false}
+                      isPending={false}
+                    />
                 </div>
                 
             </div>
