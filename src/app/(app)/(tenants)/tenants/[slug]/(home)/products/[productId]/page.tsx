@@ -2,6 +2,7 @@ import { ProductView } from "@/modules/products/ui/views/product-view";
 
 import { getQueryClient, trpc } from "@/trpc/server";
 
+//@ts-expect-error
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 
 interface Props {
