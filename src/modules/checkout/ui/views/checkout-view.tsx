@@ -76,7 +76,7 @@ if (isLoading) {
 
                 <div className="lg:col-span-3">
                     <CheckoutSidebar
-                      total={data?.totalPrice}
+                      total={data?.totalPrice || 0}
                       onCheckout={() => {}}
                       isCanceled={false}
                       isPending={false}
