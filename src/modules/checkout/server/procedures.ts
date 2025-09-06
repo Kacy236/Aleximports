@@ -6,6 +6,7 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { Media, Tenants } from "@/payload-types";
 
 export const checkoutRouter = createTRPCRouter({
+    purchase: baseProcedure,
     getProducts: baseProcedure
     .input(
       z.object({
