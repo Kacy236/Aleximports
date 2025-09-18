@@ -258,6 +258,12 @@ export interface Order {
   id: string;
   user: string | User;
   products: (string | Product)[];
+  productNames?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
   paystackReference: string;
   status: 'pending' | 'success' | 'failed';
   totalAmount: number;
@@ -448,6 +454,12 @@ export interface TenantsSelect<T extends boolean = true> {
 export interface OrdersSelect<T extends boolean = true> {
   user?: T;
   products?: T;
+  productNames?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
   paystackReference?: T;
   status?: T;
   totalAmount?: T;

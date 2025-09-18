@@ -46,8 +46,11 @@ export async function POST(req: Request) {
           throw new Error("User not found");
         }
 
-        // ✅ Collect product IDs
-        const productIds = data.metadata.products.map((p) => p.id);
+        // ✅ Collect product IDs and names
+        const productIds = data.metadata.products.map((p: any) => p.id);
+        const productNames = data.metadata.products.map((p: any) => ({
+          name: p.name,
+        }));
 
         // ✅ Create single order in PayloadCMS
         await payload.create({
@@ -56,7 +59,8 @@ export async function POST(req: Request) {
             paystackReference: data.reference,
             user: user.id,
             products: productIds,
-            totalAmount: data.amount / 100, // convert from kobo to Naira
+            productNames, // 👈 store readable product names
+            totalAmount: data.amount / 100, // convert from kobo → naira
             status: "success",
           },
         });

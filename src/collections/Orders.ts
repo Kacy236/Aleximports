@@ -17,17 +17,28 @@ export const Orders: CollectionConfig = {
       name: "products",
       type: "relationship",
       relationTo: "products",
-      hasMany: true, // ✅ allow multiple products in a single order
+      hasMany: true,
       required: true,
     },
     {
-      name: "paystackReference", // Paystack transaction reference
+      name: "productNames", // ✅ store product names for easy viewing
+      type: "array",
+      fields: [
+        {
+          name: "name",
+          type: "text",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "paystackReference",
       type: "text",
       required: true,
       unique: true,
     },
     {
-      name: "status", // pending, success, failed
+      name: "status",
       type: "select",
       options: [
         { label: "Pending", value: "pending" },
