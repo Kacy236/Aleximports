@@ -55,7 +55,7 @@ export const PriceFilter = ({
                 </Label>
                 <Input
                   type="text"
-                  placeholder="$0"
+                  placeholder="₦0"
                   value={minPrice ? formatAsCurrency(minPrice) : ""}
                   onChange={handleMinPriceChange}
                 />

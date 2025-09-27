@@ -32,8 +32,8 @@ export async function POST(req: Request) {
       case "charge.success": {
         const data = event.data;
 
-        if (!data.metadata?.userId || !data.metadata?.products) {
-          throw new Error("User ID or products missing in metadata");
+        if (!data.metadata?.userId || !data.metadata?.products || !data.metadata?.tenantId) {
+          throw new Error("User ID, tenant ID, or products missing in metadata");
         }
 
         // Fetch user
@@ -52,15 +52,16 @@ export async function POST(req: Request) {
           name: p.name,
         }));
 
-        // ✅ Create single order in PayloadCMS
+        // ✅ Create order scoped to tenant
         await payload.create({
           collection: "orders",
           data: {
-            paystackReference: data.reference,
+            tenant: data.metadata.tenantId,   // 👈 link order to tenant
             user: user.id,
             products: productIds,
-            productNames, // 👈 store readable product names
-            totalAmount: data.amount / 100, // convert from kobo → naira
+            productNames,                     // 👈 store readable product names
+            paystackReference: data.reference,
+            totalAmount: data.amount / 100,   // convert from kobo → naira
             status: "success",
           },
         });

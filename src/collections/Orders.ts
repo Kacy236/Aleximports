@@ -5,13 +5,40 @@ export const Orders: CollectionConfig = {
   admin: {
     useAsTitle: "paystackReference",
   },
+  access: {
+    read: ({ req }) => {
+      const user = req.user;
+
+      if (!user) return false;
+
+      // ✅ Admins can see all orders
+      if (user.role === "admin") {
+        return true;
+      }
+
+      // ✅ Regular users can only see their own orders
+      return {
+        user: {
+          equals: user.id,
+        },
+      };
+    },
+    create: () => true, // created by webhook
+    update: ({ req }) => req.user?.role === "admin",
+    delete: ({ req }) => req.user?.role === "admin",
+  },
   fields: [
+    {
+      name: "tenant",
+      type: "relationship",
+      relationTo: "tenants",
+      required: true,
+    },
     {
       name: "user",
       type: "relationship",
       relationTo: "users",
       required: true,
-      hasMany: false,
     },
     {
       name: "products",
@@ -21,7 +48,7 @@ export const Orders: CollectionConfig = {
       required: true,
     },
     {
-      name: "productNames", // ✅ store product names for easy viewing
+      name: "productNames",
       type: "array",
       fields: [
         {

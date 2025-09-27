@@ -256,6 +256,7 @@ export interface Tag {
  */
 export interface Order {
   id: string;
+  tenant: string | Tenant;
   user: string | User;
   products: (string | Product)[];
   productNames?:
@@ -452,6 +453,7 @@ export interface TenantsSelect<T extends boolean = true> {
  * via the `definition` "orders_select".
  */
 export interface OrdersSelect<T extends boolean = true> {
+  tenant?: T;
   user?: T;
   products?: T;
   productNames?:
