@@ -1,13 +1,13 @@
 "use client";
 
-// TOD: Add real ratings
 
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { LinkIcon, StarIcon } from "lucide-react";
+import { LinkIcon, StarIcon, CheckIcon } from "lucide-react";
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { toast } from "sonner";
+import { useState } from "react";
 
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -34,6 +34,8 @@ interface ProductViewProps {
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const trpc = useTRPC();
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
+
+    const [isCopied, setIsCopied] = useState(false);
     
     return (
         <div className="px-4 lg:px-12 py-10">
@@ -123,12 +125,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                       className="size-12"
                                       variant="elevated"
                                       onClick={() => {
+                                          setIsCopied(true);
                                           navigator.clipboard.writeText(window.location.href);
                                           toast.success("URL copied to clipboard")
+
+                                          setTimeout(() => {
+                                              setIsCopied(false);
+                                          }, 1000);
                                       }}
-                                      disabled={false}
+                                      disabled={isCopied}
                                     >
-                                        <LinkIcon />
+                                        {isCopied ? <CheckIcon/> : <LinkIcon />}
                                     </Button>
                                 </div>
 
