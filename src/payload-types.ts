@@ -172,15 +172,18 @@ export interface Tenant {
    */
   name: string;
   /**
-   * This is the name of the store (e.g. [slug].aleximports.com)
+   * This is the store subdomain (e.g. [slug].aleximports.com)
    */
   slug: string;
   image?: (string | null) | Media;
-  stripeAccountId: string;
   /**
-   * You cannot create products until you submit your Stripe details
+   * Paystack Merchant ID associated with this store
    */
-  stripeDetailsSubmitted?: boolean | null;
+  paystackMerchantId?: string | null;
+  /**
+   * You cannot create products until you complete your Paystack onboarding
+   */
+  paystackDetailsSubmitted?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -231,13 +234,17 @@ export interface Product {
   name: string;
   description?: string | null;
   /**
-   * Price in USD
+   * Price in NGN
    */
   price: number;
   category?: (string | null) | Category;
   tags?: (string | Tag)[] | null;
   image?: (string | null) | Media;
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
+  /**
+   * Protected content only visible to customers after purchase. Add product documentation, downloadable files, getting started guides and bonus materials. Supports markdown formatting
+   */
+  content?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -261,14 +268,27 @@ export interface Order {
   tenant: string | Tenant;
   user: string | User;
   products: (string | Product)[];
+  /**
+   * List of product names for display or analytics
+   */
   productNames?:
     | {
         name: string;
         id?: string | null;
       }[]
     | null;
+  /**
+   * Paystack transaction reference
+   */
   paystackReference: string;
+  /**
+   * Optional: Paystack Transaction ID (for reconciliation)
+   */
+  paystackTransactionId?: string | null;
   status: 'pending' | 'success' | 'failed';
+  /**
+   * Total amount paid (in Naira)
+   */
   totalAmount: number;
   updatedAt: string;
   createdAt: string;
@@ -441,6 +461,7 @@ export interface ProductsSelect<T extends boolean = true> {
   tags?: T;
   image?: T;
   refundPolicy?: T;
+  content?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -462,8 +483,8 @@ export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   image?: T;
-  stripeAccountId?: T;
-  stripeDetailsSubmitted?: T;
+  paystackMerchantId?: T;
+  paystackDetailsSubmitted?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -482,6 +503,7 @@ export interface OrdersSelect<T extends boolean = true> {
         id?: T;
       };
   paystackReference?: T;
+  paystackTransactionId?: T;
   status?: T;
   totalAmount?: T;
   updatedAt?: T;

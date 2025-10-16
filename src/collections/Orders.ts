@@ -1,32 +1,42 @@
+import { isSuperAdmin } from "@/lib/access";
 import type { CollectionConfig } from "payload";
 
 export const Orders: CollectionConfig = {
   slug: "orders",
-  admin: {
-    useAsTitle: "paystackReference",
-  },
+
   access: {
+    // ✅ READ
     read: ({ req }) => {
       const user = req.user;
-
       if (!user) return false;
 
-      // ✅ Admins can see all orders
-      if (user.role === "admin") {
+      // Super admins or admins can see all orders
+      if (isSuperAdmin(user) || user.role === "admin") {
         return true;
       }
 
-      // ✅ Regular users can only see their own orders
+      // Regular users can only see their own orders
       return {
         user: {
           equals: user.id,
         },
       };
     },
-    create: () => true, // created by webhook
-    update: ({ req }) => req.user?.role === "admin",
-    delete: ({ req }) => req.user?.role === "admin",
+
+    // ✅ CREATE (Admins or SuperAdmins only)
+    create: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
+
+    // ✅ UPDATE (Admins or SuperAdmins only)
+    update: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
+
+    // ✅ DELETE (Admins or SuperAdmins only)
+    delete: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
   },
+
+  admin: {
+    useAsTitle: "paystackReference",
+  },
+
   fields: [
     {
       name: "tenant",
@@ -57,12 +67,25 @@ export const Orders: CollectionConfig = {
           required: true,
         },
       ],
+      admin: {
+        description: "List of product names for display or analytics",
+      },
     },
     {
       name: "paystackReference",
       type: "text",
       required: true,
       unique: true,
+      admin: {
+        description: "Paystack transaction reference",
+      },
+    },
+    {
+      name: "paystackTransactionId",
+      type: "text",
+      admin: {
+        description: "Optional: Paystack Transaction ID (for reconciliation)",
+      },
     },
     {
       name: "status",
@@ -79,6 +102,9 @@ export const Orders: CollectionConfig = {
       name: "totalAmount",
       type: "number",
       required: true,
+      admin: {
+        description: "Total amount paid (in Naira)",
+      },
     },
   ],
 };
