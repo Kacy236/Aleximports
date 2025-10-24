@@ -177,11 +177,31 @@ export interface Tenant {
   slug: string;
   image?: (string | null) | Media;
   /**
+   * The 3-digit or 6-digit code identifying the tenant’s bank (e.g. 044 for Access Bank)
+   */
+  bankCode: string;
+  /**
+   * The tenant’s 10-digit bank account number
+   */
+  accountNumber: string;
+  /**
+   * Automatically filled after Paystack verification (read-only)
+   */
+  accountName?: string | null;
+  /**
+   * Generated automatically after successful verification with subaccount flow
+   */
+  paystackSubaccountCode?: string | null;
+  /**
+   * Percentage fee your platform takes from each transaction for this tenant (super admins only)
+   */
+  platformFeePercentage?: number | null;
+  /**
    * Paystack Merchant ID associated with this store
    */
   paystackMerchantId?: string | null;
   /**
-   * You cannot create products until you complete your Paystack onboarding
+   * Indicates if Paystack verification has been completed
    */
   paystackDetailsSubmitted?: boolean | null;
   updatedAt: string;
@@ -225,6 +245,8 @@ export interface Category {
   createdAt: string;
 }
 /**
+ * You must complete your Paystack verification (subaccount) before creating products.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
  */
@@ -232,17 +254,26 @@ export interface Product {
   id: string;
   tenant?: (string | null) | Tenant;
   name: string;
+  /**
+   * A short product description for display in listings.
+   */
   description?: string | null;
   /**
-   * Price in NGN
+   * Price in Nigerian Naira (₦).
    */
   price: number;
   category?: (string | null) | Category;
   tags?: (string | Tag)[] | null;
+  /**
+   * Upload a clear product image.
+   */
   image?: (string | null) | Media;
+  /**
+   * Choose the refund policy for this product.
+   */
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   /**
-   * Protected content only visible to customers after purchase. Add product documentation, downloadable files, getting started guides and bonus materials. Supports markdown formatting
+   * Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).
    */
   content?: string | null;
   updatedAt: string;
@@ -483,6 +514,11 @@ export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   image?: T;
+  bankCode?: T;
+  accountNumber?: T;
+  accountName?: T;
+  paystackSubaccountCode?: T;
+  platformFeePercentage?: T;
   paystackMerchantId?: T;
   paystackDetailsSubmitted?: T;
   updatedAt?: T;

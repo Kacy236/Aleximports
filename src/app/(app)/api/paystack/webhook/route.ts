@@ -1,84 +1,91 @@
 import crypto from "crypto";
+import { NextResponse } from "next/server";
 import { getPayload } from "payload";
 import config from "@payload-config";
-import { NextResponse } from "next/server";
 import type { PaystackWebhookEvent } from "@/modules/checkout/types";
 
+export const config = {
+  api: {
+    bodyParser: false, // 🚫 Disable automatic body parsing
+  },
+};
+
 export async function POST(req: Request) {
-  const rawBody = await req.text();
-  const signature = req.headers.get("x-paystack-signature");
-
-  // ✅ Verify Paystack signature
-  const hash = crypto
-    .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY!)
-    .update(rawBody)
-    .digest("hex");
-
-  if (hash !== signature) {
-    console.error("❌ Invalid Paystack signature");
-    return NextResponse.json(
-      { message: "Invalid signature" },
-      { status: 400 }
-    );
-  }
-
-  const event = JSON.parse(rawBody) as PaystackWebhookEvent;
-  console.log("✅ Paystack event received:", event.event);
-
-  const payload = await getPayload({ config });
-
   try {
-    switch (event.event) {
-      case "charge.success": {
-        const data = event.data;
+    const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
+    if (!PAYSTACK_SECRET_KEY) {
+      console.error("❌ Missing PAYSTACK_SECRET_KEY in environment.");
+      return NextResponse.json({ message: "Server misconfigured" }, { status: 500 });
+    }
 
-        if (!data.metadata?.userId || !data.metadata?.products || !data.metadata?.tenantId) {
-          throw new Error("User ID, tenant ID, or products missing in metadata");
-        }
+    // ✅ Step 1: Read the raw request body text
+    const rawBody = await req.text();
+    const signature = req.headers.get("x-paystack-signature");
 
-        // Fetch user
-        const user = await payload.findByID({
-          collection: "users",
-          id: data.metadata.userId,
-        });
+    // ✅ Step 2: Verify the Paystack signature using raw body
+    const computedHash = crypto
+      .createHmac("sha512", PAYSTACK_SECRET_KEY)
+      .update(rawBody)
+      .digest("hex");
 
-        if (!user) {
-          throw new Error("User not found");
-        }
+    if (!signature || computedHash !== signature) {
+      console.error("❌ Invalid Paystack signature");
+      return NextResponse.json({ message: "Invalid signature" }, { status: 400 });
+    }
 
-        // ✅ Collect product IDs and names
-        const productIds = data.metadata.products.map((p: any) => p.id);
-        const productNames = data.metadata.products.map((p: any) => ({
-          name: p.name,
-        }));
+    // ✅ Step 3: Parse JSON safely after verifying signature
+    const event = JSON.parse(rawBody) as PaystackWebhookEvent;
+    console.log("✅ Paystack event received:", event.event);
 
-        // ✅ Create order scoped to tenant
-        await payload.create({
-          collection: "orders",
-          data: {
-            tenant: data.metadata.tenantId,   // 👈 link order to tenant
-            user: user.id,
-            products: productIds,
-            productNames,                     // 👈 store readable product names
-            paystackReference: data.reference,
-            totalAmount: data.amount / 100,   // convert from kobo → naira
-            status: "success",
-          },
-        });
+    const payload = await getPayload({ config });
 
-        break;
+    if (event.event === "charge.success") {
+      const data = event.data;
+
+      if (
+        !data.metadata?.userId ||
+        !data.metadata?.tenantId ||
+        !Array.isArray(data.metadata?.products)
+      ) {
+        throw new Error("Invalid metadata from Paystack");
       }
 
-      default:
-        console.log(`Unhandled Paystack event: ${event.event}`);
-    }
-  } catch (error) {
-    console.error("Webhook handler failed:", error);
-    return NextResponse.json(
-      { message: "Webhook handler failed" },
-      { status: 500 }
-    );
-  }
+      const user = await payload.findByID({
+        collection: "users",
+        id: data.metadata.userId,
+      });
+      const tenant = await payload.findByID({
+        collection: "tenants",
+        id: data.metadata.tenantId,
+      });
 
-  return NextResponse.json({ message: "Received" }, { status: 200 });
+      if (!user || !tenant) throw new Error("User or tenant not found");
+
+      const productIds = data.metadata.products.map((p: any) => p.id);
+      const productNames = data.metadata.products.map((p: any) => ({ name: p.name }));
+
+      await payload.create({
+        collection: "orders",
+        data: {
+          tenant: tenant.id,
+          user: user.id,
+          products: productIds,
+          productNames,
+          paystackReference: data.reference,
+          paystackTransactionId: String(data.id), // ✅ add this
+          totalAmount: data.amount / 100, // Convert kobo → naira
+          status: "success",
+        },
+      });
+
+      console.log(`✅ Order created for user ${user.id} in tenant ${tenant.id}`);
+    } else {
+      console.log(`ℹ️ Unhandled Paystack event: ${event.event}`);
+    }
+
+    return NextResponse.json({ message: "Received" }, { status: 200 });
+  } catch (err) {
+    console.error("❌ Webhook error:", err);
+    return NextResponse.json({ message: "Server error" }, { status: 500 });
+  }
 }

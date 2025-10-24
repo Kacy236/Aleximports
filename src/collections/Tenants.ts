@@ -39,6 +39,55 @@ export const Tenants: CollectionConfig = {
       relationTo: "media",
     },
     {
+      name: "bankCode",
+      type: "text",
+      required: true,
+      label: "Bank Code",
+      admin: {
+        description: "The 3-digit or 6-digit code identifying the tenant’s bank (e.g. 044 for Access Bank)",
+      },
+    },
+    {
+      name: "accountNumber",
+      type: "text",
+      required: true,
+      label: "Account Number",
+      admin: {
+        description: "The tenant’s 10-digit bank account number",
+      },
+    },
+    {
+      name: "accountName",
+      type: "text",
+      required: false,
+      label: "Account Name",
+      admin: {
+        description: "Automatically filled after Paystack verification (read-only)",
+      },
+    },
+    {
+      name: "paystackSubaccountCode",
+      type: "text",
+      required: false,
+      label: "Paystack Subaccount Code",
+      admin: {
+        description: "Generated automatically after successful verification with subaccount flow",
+      },
+    },
+    {
+      name: "platformFeePercentage",
+      type: "number",
+      required: false,
+      label: "Platform Fee (%)",
+      access: {
+        read: ({ req }) => isSuperAdmin(req.user),
+        update: ({ req }) => isSuperAdmin(req.user),
+      },
+      admin: {
+        description: "Percentage fee your platform takes from each transaction for this tenant (super admins only)",
+      },
+    },
+    {
       name: "paystackMerchantId",
       type: "text",
       required: false,
@@ -52,11 +101,12 @@ export const Tenants: CollectionConfig = {
     {
       name: "paystackDetailsSubmitted",
       type: "checkbox",
+      defaultValue: false,
       access: {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "You cannot create products until you complete your Paystack onboarding",
+        description: "Indicates if Paystack verification has been completed",
       },
     },
   ],
