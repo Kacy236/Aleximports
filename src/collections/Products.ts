@@ -111,6 +111,15 @@ export const Products: CollectionConfig = {
       },
     },
     {
+        name: "isPrivate",
+        label: "Private",
+        defaultValue: false,
+        type: "checkbox",
+        admin: {
+            description: "If checked, this product will not be shown on the public storefront"
+        },
+    },
+    {
         name: "isArchived",
         label: "Archive",
         defaultValue: false,
