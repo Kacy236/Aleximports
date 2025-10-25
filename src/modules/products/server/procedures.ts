@@ -1,4 +1,5 @@
 import z from "zod";
+import { TRPCError } from "@trpc/server";
 import type { Sort, Where } from "payload";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
@@ -22,6 +23,13 @@ export const productsRouter = createTRPCRouter({
             content: false,
           },
         });
+
+        if (product.isArchived) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Product not found",
+          })
+        }
 
         const reviews = await ctx.db.find({
           collection: "reviews",
@@ -87,7 +95,11 @@ export const productsRouter = createTRPCRouter({
     }),
   )
     .query(async ({ ctx, input }) => {
-      const where: Where = {};
+      const where: Where = {
+        isArchived: {
+          not_equals: true,
+        },
+      };
       let sort: Sort = "-createdAt";
 
       if (input.sort === "curated") {

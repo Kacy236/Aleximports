@@ -147,6 +147,7 @@ export const checkoutRouter = createTRPCRouter({
           and: [
             { id: { in: input.productIds } },
             { "tenant.slug": { equals: input.tenantSlug } },
+            { isArchived: { not_equals: true } },
           ],
         },
       });
@@ -232,7 +233,12 @@ export const checkoutRouter = createTRPCRouter({
       const data = await ctx.db.find({
         collection: "products",
         depth: 2,
-        where: { id: { in: input.ids } },
+        where: {
+          and: [
+            { id: { in: input.ids } },
+            { isArchived: { not_equals: true } },
+          ],
+        },
       });
 
       if (data.totalDocs !== input.ids.length)

@@ -36,6 +36,7 @@ export const Products: CollectionConfig = {
       // ✅ Tenant must have a Paystack subaccount code to create products
       return Boolean(tenant?.paystackSubaccountCode);
     },
+    delete: ({ req }) => isSuperAdmin(req.user),
   },
 
   admin: {
@@ -108,6 +109,15 @@ export const Products: CollectionConfig = {
         description:
           "Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).",
       },
+    },
+    {
+        name: "isArchived",
+        label: "Archive",
+        defaultValue: false,
+        type: "checkbox",
+        admin: {
+            description: "If checked, this product will be archived"
+        },
     },
   ],
 };
