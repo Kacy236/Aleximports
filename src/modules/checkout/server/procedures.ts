@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { Media, Tenants } from "@/payload-types";
 import { CheckoutMetadata, ProductMetadata } from "../types";
+import { generateTenantURL } from "@/lib/utils";
 
 export const checkoutRouter = createTRPCRouter({
 
@@ -180,6 +181,8 @@ export const checkoutRouter = createTRPCRouter({
         // ✅ Default platform fee = 10% unless tenant override exists
         const PLATFORM_FEE_PERCENTAGE = Number(tenant.platformFeePercentage ?? 10);
 
+        const domain = generateTenantURL(input.tenantSlug);
+
         const response = await axios.post(
           "https://api.paystack.co/transaction/initialize",
           {
@@ -187,7 +190,7 @@ export const checkoutRouter = createTRPCRouter({
             amount: totalAmount,
             subaccount: tenant.paystackSubaccountCode, // funds go to tenant
             transaction_charge: 0, // Paystack automatically deducts your percentage charge
-            callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/tenants/${input.tenantSlug}/checkout?success=true`,
+            callback_url: `${domain}/checkout?success=true`,
             metadata: {
               userId: ctx.session.user.id,
               products: products.docs.map((p) => ({
