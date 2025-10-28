@@ -1,4 +1,5 @@
 import { isSuperAdmin } from "@/lib/access";
+
 import type { CollectionConfig } from "payload";
 import type { Tenant } from "@/payload-types";
 
@@ -53,7 +54,7 @@ export const Products: CollectionConfig = {
     },
     {
       name: "description",
-      type: "textarea",
+      type: "richText",
       admin: {
         description: "A short product description for display in listings.",
       },
@@ -104,7 +105,7 @@ export const Products: CollectionConfig = {
     },
     {
       name: "content",
-      type: "textarea",
+      type: "richText",
       admin: {
         description:
           "Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).",
