@@ -1,0 +1,13 @@
+{
+    "build": {
+      "env": {
+        "BUN_INSTALL": "false"
+      }
+    },
+    "functions": {
+      "api/**/*.js": {
+        "runtime": "nodejs20.x"
+      }
+    }
+  }
+  
