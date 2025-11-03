@@ -2,13 +2,14 @@ import { ProductView, ProductViewSkeleton } from "@/modules/products/ui/views/pr
 
 import { getQueryClient, trpc } from "@/trpc/server";
 
-//@ts-expect-error
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 
 interface Props {
     params: Promise<{ productId: string; slug: string }>;
 };
+
+export const dynamic = "force-dynamic";
 
 const Page = async ({ params }: Props) => {
     const { productId, slug } = await params;

@@ -1,5 +1,5 @@
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
-import { Categories } from "@/payload-types";
+import { Category } from "@/payload-types";
 import Link from "../../../../../../node_modules/next/link";
 
 interface Props {
@@ -32,7 +32,7 @@ export const SubcategoryMenu = ({
               className="w-60 text-black rounded-md overflow-hidden border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-x-[2px] -translate-y-[2px]"
             >
                 <div>
-                    {category.subcategories?.map((subcategory: Categories) => (
+                    {category.subcategories?.map((subcategory: Category) => (
                         <Link 
                           key={subcategory.slug} 
                           href={`/${category.slug}/${subcategory.slug}`}

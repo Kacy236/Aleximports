@@ -10,12 +10,12 @@ export const Orders: CollectionConfig = {
       const user = req.user;
       if (!user) return false;
 
-      // Super admins or admins can see all orders
-      if (isSuperAdmin(user) || user.role === "admin") {
+      // ✅ Super admins can see all orders
+      if (isSuperAdmin(user)) {
         return true;
       }
 
-      // Regular users can only see their own orders
+      // ✅ Regular users can only see their own orders
       return {
         user: {
           equals: user.id,
@@ -23,14 +23,14 @@ export const Orders: CollectionConfig = {
       };
     },
 
-    // ✅ CREATE (Admins or SuperAdmins only)
-    create: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
+    // ✅ CREATE (SuperAdmins only)
+    create: ({ req }) => isSuperAdmin(req.user),
 
-    // ✅ UPDATE (Admins or SuperAdmins only)
-    update: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
+    // ✅ UPDATE (SuperAdmins only)
+    update: ({ req }) => isSuperAdmin(req.user),
 
-    // ✅ DELETE (Admins or SuperAdmins only)
-    delete: ({ req }) => isSuperAdmin(req.user) || req.user?.role === "admin",
+    // ✅ DELETE (SuperAdmins only)
+    delete: ({ req }) => isSuperAdmin(req.user),
   },
 
   admin: {

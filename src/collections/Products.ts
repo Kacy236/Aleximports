@@ -14,9 +14,10 @@ export const Products: CollectionConfig = {
       // ✅ Handle tenant being an object or a string
       const tenantRel = req.user?.tenants?.[0]?.tenant;
       const tenantId =
-        typeof tenantRel === "object"
-          ? tenantRel.id || tenantRel._id
-          : tenantRel;
+      typeof tenantRel === "object"
+        ? (tenantRel as any).id || (tenantRel as any)._id
+        : tenantRel;
+    
 
       if (!tenantId) {
         console.error("❌ No valid tenantId found for user:", req.user?.id);

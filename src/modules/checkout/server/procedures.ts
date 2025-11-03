@@ -2,7 +2,7 @@ import z from "zod";
 import axios from "axios";
 import { TRPCError } from "@trpc/server";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { Media, Tenants } from "@/payload-types";
+import { Media, Tenant } from "@/payload-types";
 import { CheckoutMetadata, ProductMetadata } from "../types";
 import { generateTenantURL } from "@/lib/utils";
 
@@ -258,7 +258,7 @@ export const checkoutRouter = createTRPCRouter({
         docs: data.docs.map((doc) => ({
           ...doc,
           image: doc.image as Media | null,
-          tenant: doc.tenant as Tenants & { image: Media | null },
+          tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };
     }),

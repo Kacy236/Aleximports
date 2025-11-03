@@ -1,7 +1,7 @@
 import z from "zod";
 
 import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
-import { Media, Tenants } from "@/payload-types";
+import { Media, Tenant } from "@/payload-types";
 import { DEFAULT_LIMIT } from "@/constants";
 import { TRPCError } from "@trpc/server";
 
@@ -128,7 +128,7 @@ export const libraryRouter = createTRPCRouter({
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: doc.image as Media | null,
-          tenant: doc.tenant as Tenants & { image: Media | null },
+          tenant: doc.tenant as Tenant& { image: Media | null },
         })),
       };
     }),

@@ -3,7 +3,7 @@ import { TRPCError } from "@trpc/server";
 import type { Sort, Where } from "payload";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
-import { Categories, Media, Tenants } from "@/payload-types";
+import { Category, Media, Tenant } from "@/payload-types";
 import { sortValues } from "../search-params";
 import { DEFAULT_LIMIT } from "@/constants";
 
@@ -75,7 +75,7 @@ export const productsRouter = createTRPCRouter({
         return {
           ...product,
           image: product.image as Media | null,
-          tenant: product.tenant as Tenants & { image: Media | null },
+          tenant: product.tenant as Tenant & { image: Media | null },
           reviewRating,
           reviewCount: reviews.totalDocs,
           ratingDistribution,
@@ -137,7 +137,7 @@ export const productsRouter = createTRPCRouter({
         // if we are loading products for public storefront (no tenantSlug)
         // Make sure to not load products set to "isPrivate: true" (using reverse not_equals logic)
         // These products are exclusively private to the tenant store
-        
+
         where["isPrivate"] = {
           not_equals: true,
         }
@@ -160,7 +160,7 @@ export const productsRouter = createTRPCRouter({
           ...doc,
           subcategories: (doc.subcategories?.docs ?? []).map((doc) => ({
               // Because of "depth: 1" we are confident "doc" will be a type of Category
-              ...(doc as Categories),
+              ...(doc as Category),
               subcategories: undefined,
           }))
       }));
@@ -225,7 +225,7 @@ export const productsRouter = createTRPCRouter({
           docs: dataWithSummarizedReviews.map((doc) => ({
             ...doc,
             image: doc.image as Media | null,
-            tenant: doc.tenant as Tenants & { image: Media | null },
+            tenant: doc.tenant as Tenant & { image: Media | null },
           }))
         }
     }),

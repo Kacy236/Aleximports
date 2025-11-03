@@ -7,7 +7,7 @@ import { ShoppingCartIcon } from "lucide-react";
 
 interface CheckoutButtonProps {
     className?: string;
-    hideIdEmpty?: boolean;
+    hideIfEmpty?: boolean;
     tenantSlug: string;
 }
 export const CheckoutButton = ({

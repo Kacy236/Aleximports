@@ -1,6 +1,6 @@
 import z from "zod";
 import { TRPCError } from "@trpc/server";
-import { Media, Tenants } from "@/payload-types";
+import { Media, Tenant } from "@/payload-types";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
@@ -30,6 +30,6 @@ export const tenantsRouter = createTRPCRouter({
             throw new TRPCError({ code: "NOT_FOUND", message: "Tenant not found"});
           }
 
-        return tenant as Tenants & { image: Media | null }
+        return tenant as Tenant & { image: Media | null }
     }),
 });

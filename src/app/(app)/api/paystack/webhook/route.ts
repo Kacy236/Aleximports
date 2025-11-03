@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getPayload } from "payload";
-import config from "@payload-config";
+import payloadConfig from "@payload-config"; // ✅ renamed to avoid conflict
 import type { PaystackWebhookEvent } from "@/modules/checkout/types";
 
 export const config = {
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const event = JSON.parse(rawBody) as PaystackWebhookEvent;
     console.log("✅ Paystack event received:", event.event);
 
-    const payload = await getPayload({ config });
+    const payload = await getPayload({ config: payloadConfig }); // ✅ use renamed variable
 
     if (event.event === "charge.success") {
       const data = event.data;
@@ -61,8 +61,8 @@ export async function POST(req: Request) {
 
       if (!user || !tenant) throw new Error("User or tenant not found");
 
-      const productIds = data.metadata.products.map((p: any) => p.id);
-      const productNames = data.metadata.products.map((p: any) => ({ name: p.name }));
+      const productIds = data.metadata.products.map((p) => p.id);
+      const productNames = data.metadata.products.map((p) => ({ name: p.name }));
 
       await payload.create({
         collection: "orders",
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
           products: productIds,
           productNames,
           paystackReference: data.reference,
-          paystackTransactionId: String(data.id), // ✅ add this
+          paystackTransactionId: String(data.id),
           totalAmount: data.amount / 100, // Convert kobo → naira
           status: "success",
         },
