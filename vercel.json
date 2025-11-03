@@ -1,9 +1,11 @@
 {
     "buildCommand": "bun run build",
     "installCommand": "bun install",
-    "outputDirectory": ".vercel/output",
+    "outputDirectory": ".next",
+    "framework": "nextjs",
     "env": {
-      "BUN_INSTALL": "false"
+      "BUN_INSTALL": "false",
+      "NODE_ENV": "production"
     }
   }
   
