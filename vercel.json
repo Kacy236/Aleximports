@@ -1,13 +1,9 @@
 {
-    "build": {
-      "env": {
-        "BUN_INSTALL": "false"
-      }
-    },
-    "functions": {
-      "api/**/*.js": {
-        "runtime": "nodejs20.x"
-      }
+    "buildCommand": "npm run build",
+    "installCommand": "npm install",
+    "outputDirectory": ".vercel/output",
+    "env": {
+      "BUN_INSTALL": "false"
     }
   }
   
