@@ -5,8 +5,8 @@ interface Props {
   value: string;
 }
 
-export const generateAuthCookie = ({ prefix, value }: Props) => {
-  const cookieStore = cookies();
+export const generateAuthCookie = async ({ prefix, value }: Props) => {
+  const cookieStore = await cookies(); // ✅ await needed in Next 15
 
   cookieStore.set({
     name: `${prefix}-token`,
