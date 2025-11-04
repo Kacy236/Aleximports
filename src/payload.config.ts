@@ -1,7 +1,7 @@
 // storage-adapter-import-placeholder
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
-import { lexicalEditor} from '@payloadcms/richtext-lexical'
+import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { multiTenantPlugin } from '@payloadcms/plugin-multi-tenant'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -23,25 +23,36 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
+  cors: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
+  csrf: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
+
   admin: {
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     components: {
-      beforeNavLinks: ["@/components/paystack-verify#PaystackVerify"]
-    }
+      beforeNavLinks: ["@/components/paystack-verify#PaystackVerify"],
+    },
   },
+
   collections: [Users, Media, Categories, Products, Tags, Tenants, Orders, Reviews],
+
   editor: lexicalEditor(),
+
   secret: process.env.PAYLOAD_SECRET || '',
+
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
   }),
+
   sharp,
+
   plugins: [
     payloadCloudPlugin(),
     multiTenantPlugin<Config>({
