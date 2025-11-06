@@ -13,9 +13,13 @@ export const generateAuthCookie = async ({ prefix, value }: Props) => {
     value,
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: process.env.NODE_ENV === "production",
-    domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, ""),
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    // This enables the cookie auth on localhost
+    // But it will not work wih subdomains turned on
+    ...(process.env.NODE_ENV !== "development" && {
+       sameSite: "none",
+       secure: true,
+       domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, ""),
+       maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
   });
 };
