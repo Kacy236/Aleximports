@@ -13,7 +13,7 @@ export const generateAuthCookie = async ({ prefix, value }: Props) => {
     value,
     httpOnly: true,
     path: "/",
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    sameSite: "none",
     secure: process.env.NODE_ENV === "production",
     domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, ""),
     maxAge: 60 * 60 * 24 * 7, // 7 days
