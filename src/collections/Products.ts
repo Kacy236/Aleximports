@@ -84,6 +84,7 @@ export const Products: CollectionConfig = {
       name: "image",
       type: "upload",
       relationTo: "media",
+      required: true,
       admin: {
         description: "Upload a clear product image.",
       },
