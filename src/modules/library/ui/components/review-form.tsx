@@ -128,7 +128,7 @@ export const ReviewForm = ({ productId, initialData }: Props) => {
                       disabled={createReview.isPending || updateReview.isPending}
                       type="submit"
                       size="lg"
-                      className="bg-black text-white hover:bg-pink-400 hover:text-primary w-fit"
+                      className="bg-black text-white hover:bg-green-500 hover:text-primary w-fit"
                     >
                         {initialData ? "Update review" : "Post review"}
                     </Button>
@@ -165,7 +165,7 @@ export const ReviewFormSkeleton = () => {
                       disabled
                       type="button"
                       size="lg"
-                      className="bg-black text-white hover:bg-pink-400 hover:text-primary w-fit"
+                      className="bg-black text-white hover:bg-green-500 hover:text-primary w-fit"
                     >
                         Post review
                     </Button>

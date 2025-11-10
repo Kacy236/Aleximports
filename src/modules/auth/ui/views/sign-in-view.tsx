@@ -118,7 +118,7 @@ export const SignInView = () => {
                           type="submit"
                           size="lg"
                           variant="elevated"
-                          className="bg-black text-white hover:bg-pink-400 hover:text-primary"
+                          className="bg-black text-white hover:bg-green-500 hover:text-primary"
                         >
                             Log in
                         </Button>

@@ -71,7 +71,7 @@ export const ProductCard = ({
               )}
           </div>
           <div className="p-4">
-              <div className="relative px-2 py-1 border bg-pink-400 w-fit">
+              <div className="relative px-2 py-1 border bg-green-500 w-fit">
                   <p className="text-sm font-medium">
                       {formatCurrency(price)}
                   </p>
