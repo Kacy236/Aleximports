@@ -72,9 +72,11 @@ const categories = [
     name: "All",
     slug: "all",
   },
+
+  // Electronics
   {
     name: "Electronics",
-    color: "#4A90E2",
+    color: "#2F80FF",
     slug: "electronics",
     subcategories: [
       { name: "Mobile Phones", slug: "mobile-phones" },
@@ -89,9 +91,11 @@ const categories = [
       { name: "Gaming Consoles", slug: "gaming-consoles" },
     ],
   },
+
+  // Fashion
   {
     name: "Fashion",
-    color: "#E91E63",
+    color: "#FF2D75",
     slug: "fashion",
     subcategories: [
       { name: "Men’s Clothing", slug: "mens-clothing" },
@@ -104,9 +108,11 @@ const categories = [
       { name: "Lingerie & Sleepwear", slug: "lingerie-sleepwear" },
     ],
   },
+
+  // Health & Beauty
   {
     name: "Health & Beauty",
-    color: "#FF69B4",
+    color: "#FF4DBB",
     slug: "health-beauty",
     subcategories: [
       { name: "Makeup", slug: "makeup" },
@@ -119,9 +125,11 @@ const categories = [
       { name: "Beauty Tools", slug: "beauty-tools" },
     ],
   },
+
+  // Home & Living
   {
     name: "Home & Living",
-    color: "#8BC34A",
+    color: "#76E043",
     slug: "home-living",
     subcategories: [
       { name: "Furniture", slug: "furniture" },
@@ -134,9 +142,11 @@ const categories = [
       { name: "Cleaning Supplies", slug: "cleaning-supplies" },
     ],
   },
+
+  // Automotive
   {
     name: "Automotive",
-    color: "#607D8B",
+    color: "#5C6DFF",
     slug: "automotive",
     subcategories: [
       { name: "Car Parts", slug: "car-parts" },
@@ -148,9 +158,11 @@ const categories = [
       { name: "Tools & Equipment", slug: "tools-equipment" },
     ],
   },
+
+  // Computers & Office
   {
     name: "Computers & Office",
-    color: "#9C27B0",
+    color: "#C63BFF",
     slug: "computers-office",
     subcategories: [
       { name: "Desktops", slug: "desktops" },
@@ -163,9 +175,11 @@ const categories = [
       { name: "Office Supplies", slug: "office-supplies" },
     ],
   },
+
+  // Groceries & Food
   {
     name: "Groceries & Food",
-    color: "#FFA726",
+    color: "#FF8C1A",
     slug: "groceries-food",
     subcategories: [
       { name: "Beverages", slug: "beverages" },
@@ -178,9 +192,11 @@ const categories = [
       { name: "Organic & Healthy", slug: "organic-healthy" },
     ],
   },
+
+  // Sports & Outdoors
   {
     name: "Sports & Outdoors",
-    color: "#3F51B5",
+    color: "#5368FF",
     slug: "sports-outdoors",
     subcategories: [
       { name: "Fitness Equipment", slug: "fitness-equipment" },
@@ -192,9 +208,11 @@ const categories = [
       { name: "Outdoor Gear", slug: "outdoor-gear" },
     ],
   },
+
+  // Toys & Babies
   {
     name: "Toys, Kids & Babies",
-    color: "#FFB300",
+    color: "#FFC400",
     slug: "toys-kids-babies",
     subcategories: [
       { name: "Toys & Games", slug: "toys-games" },
@@ -206,9 +224,11 @@ const categories = [
       { name: "School Supplies", slug: "school-supplies" },
     ],
   },
+
+  // Real Estate
   {
     name: "Real Estate & Rentals",
-    color: "#607D8B",
+    color: "#4A90E2",
     slug: "real-estate-rentals",
     subcategories: [
       { name: "Apartments", slug: "apartments" },
@@ -220,9 +240,11 @@ const categories = [
       { name: "Office Spaces", slug: "office-spaces" },
     ],
   },
+
+  // Services
   {
     name: "Services",
-    color: "#795548",
+    color: "#A3684A",
     slug: "services",
     subcategories: [
       { name: "Repairs & Maintenance", slug: "repairs-maintenance" },
@@ -235,9 +257,11 @@ const categories = [
       { name: "Digital Marketing", slug: "digital-marketing" },
     ],
   },
+
+  // Books & Stationery
   {
     name: "Books & Stationery",
-    color: "#009688",
+    color: "#00CCAA",
     slug: "books-stationery",
     subcategories: [
       { name: "Fiction", slug: "fiction" },
@@ -249,9 +273,11 @@ const categories = [
       { name: "Office Stationery", slug: "office-stationery" },
     ],
   },
+
+  // Pet Supplies
   {
     name: "Pet Supplies",
-    color: "#FF7043",
+    color: "#FF6A3D",
     slug: "pet-supplies",
     subcategories: [
       { name: "Pet Food", slug: "pet-food" },
@@ -262,9 +288,11 @@ const categories = [
       { name: "Pet Health", slug: "pet-health" },
     ],
   },
+
+  // Industrial & Tools
   {
     name: "Industrial & Tools",
-    color: "#455A64",
+    color: "#607DFF",
     slug: "industrial-tools",
     subcategories: [
       { name: "Power Tools", slug: "power-tools" },
@@ -275,9 +303,11 @@ const categories = [
       { name: "Machinery", slug: "machinery" },
     ],
   },
+
+  // Travel & Luggage
   {
     name: "Travel & Luggage",
-    color: "#4DD0E1",
+    color: "#4CEBFF",
     slug: "travel-luggage",
     subcategories: [
       { name: "Suitcases", slug: "suitcases" },
@@ -287,9 +317,11 @@ const categories = [
       { name: "Luggage Covers", slug: "luggage-covers" },
     ],
   },
+
+  // Other
   {
     name: "Other",
-    color: "#9E9E9E",
+    color: "#BDBDBD",
     slug: "other",
     subcategories: [
       { name: "Uncategorized", slug: "uncategorized" },

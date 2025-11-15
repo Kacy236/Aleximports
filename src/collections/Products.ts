@@ -20,7 +20,7 @@ export const Products: CollectionConfig = {
     
 
       if (!tenantId) {
-        console.error("❌ No valid tenantId found for user:", req.user?.id);
+        
         return false;
       }
 
