@@ -70,44 +70,9 @@ export const Products: CollectionConfig = {
     },
     {
       name: "category",
-      label: "Category",
-      type: "relationship",
-      relationTo: "categories",
-      required: true,
-      hasMany: false,
-      filterOptions: () => ({
-        parent: { equals: null }, // Only top-level categories
-      }),
-      admin: {
-        position: "sidebar",
-        description: "Main product category (e.g., Design, Music, etc.)",
-      },
-    },
-    {
-      name: "subcategory",
-      label: "Subcategory (Optional)",
       type: "relationship",
       relationTo: "categories",
       hasMany: false,
-      admin: {
-        position: "sidebar",
-        condition: ({ category }) => !!category,
-        description: "Refine the category (e.g., UI/UX, Watercolor, etc.)",
-      },
-      // Correct filterOptions – returns valid Where query or false
-      filterOptions: ({ siblingData }) => {
-        const parentId = siblingData?.category;
-    
-        // If no parent category selected → show NO subcategories
-        if (!parentId) {
-          return false; // This hides all options cleanly
-        }
-    
-        // Only show categories whose `parent` field equals the selected category
-        return {
-          parent: { equals: parentId },
-        };
-      },
     },
     {
       name: "tags",
