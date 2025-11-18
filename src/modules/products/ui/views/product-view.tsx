@@ -41,14 +41,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     return (
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
-            <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] border-b">
-    <Image
-      src={data.image?.url || "/placeholder.png"}
-      alt={data.name}
-      fill
-      className="object-cover"
-    />
+            <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[800px] xl:h-[900px] border-b">
+  <Image
+    src={data.image?.url || "/placeholder.png"}
+    alt={data.name}
+    fill
+    className="object-cover"
+    priority
+  />
 </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-6">
                     <div className="col-span-4">
                         <div className="p-6">
