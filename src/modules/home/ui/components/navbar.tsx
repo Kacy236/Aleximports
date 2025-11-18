@@ -45,9 +45,8 @@ const NavbarItem = ({
     )
 }
 
-const navbarItems = [
-    
-]
+const navbarItems: any[] = [];
+
 
 export const Navbar = () => {
     const pathname = usePathname();
