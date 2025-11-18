@@ -281,14 +281,7 @@ export interface Product {
    * Price in Nigerian Naira (₦).
    */
   price: number;
-  /**
-   * Main product category (e.g., Design, Music, etc.)
-   */
-  category: string | Category;
-  /**
-   * Refine the category (e.g., UI/UX, Watercolor, etc.)
-   */
-  subcategory?: (string | null) | Category;
+  category?: (string | null) | Category;
   tags?: (string | Tag)[] | null;
   /**
    * Upload a clear product image.
@@ -538,7 +531,6 @@ export interface ProductsSelect<T extends boolean = true> {
   description?: T;
   price?: T;
   category?: T;
-  subcategory?: T;
   tags?: T;
   image?: T;
   refundPolicy?: T;
