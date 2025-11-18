@@ -70,9 +70,35 @@ export const Products: CollectionConfig = {
     },
     {
       name: "category",
+      label: "Category",
+      type: "relationship",
+      relationTo: "categories",
+      required: true,
+      hasMany: false,
+      filterOptions: () => ({
+        parent: { equals: null }, // Only top-level categories
+      }),
+      admin: {
+        position: "sidebar",
+        description: "Main product category (e.g., Design, Music, etc.)",
+      },
+    },
+    {
+      name: "subcategory",
+      label: "Subcategory (Optional)",
       type: "relationship",
       relationTo: "categories",
       hasMany: false,
+      admin: {
+        position: "sidebar",
+        condition: ({ category }) => !!category,
+        description: "Refine the category (e.g., UI/UX, Watercolor, etc.)",
+      },
+      filterOptions: ({ siblingData }) => {
+        const parentId = siblingData.category;
+        if (!parentId) return { id: { equals: null } };
+        return { parent: { equals: parentId } };
+      },
     },
     {
       name: "tags",
