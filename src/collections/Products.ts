@@ -94,10 +94,19 @@ export const Products: CollectionConfig = {
         condition: ({ category }) => !!category,
         description: "Refine the category (e.g., UI/UX, Watercolor, etc.)",
       },
+      // Correct filterOptions – returns valid Where query or false
       filterOptions: ({ siblingData }) => {
-        const parentId = siblingData.category;
-        if (!parentId) return { id: { equals: null } };
-        return { parent: { equals: parentId } };
+        const parentId = siblingData?.category;
+    
+        // If no parent category selected → show NO subcategories
+        if (!parentId) {
+          return false; // This hides all options cleanly
+        }
+    
+        // Only show categories whose `parent` field equals the selected category
+        return {
+          parent: { equals: parentId },
+        };
       },
     },
     {
