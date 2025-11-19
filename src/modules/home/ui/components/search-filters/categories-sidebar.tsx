@@ -8,57 +8,48 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
-interface Props {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-}
+import { useSidebar } from "@/providers/SidebarProvider";
 
-export const CategoriesSidebar = ({ open, onOpenChange }: Props) => {
+export const CategoriesSidebar = () => {
+    const { open, setOpen } = useSidebar();
+
     const trpc = useTRPC();
     const { data } = useQuery(trpc.categories.getMany.queryOptions());
 
     const router = useRouter();
 
-    const [parentCategories, setParentCategories] =
-        useState<CategoriesGetManyOutput | null>(null);
-
-    const [selectedCategory, setSelectedCategory] =
-        useState<CategoriesGetManyOutput[number] | null>(null);
+    const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<CategoriesGetManyOutput[1] | null>(null);
 
     const currentCategories = parentCategories ?? data ?? [];
 
-    const handleOpenChange = (open: boolean) => {
+    const handleOpenChange = (openState: boolean) => {
         setSelectedCategory(null);
         setParentCategories(null);
-        onOpenChange(open);
+        setOpen(openState);
     };
 
-    const handleCategoryClick = (category: CategoriesGetManyOutput[number]) => {
-        const hasChildren =
-            category.subcategories && category.subcategories.length > 0;
+    const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
+        const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
-        if (hasChildren) {
-            setParentCategories(
-                category.subcategories as CategoriesGetManyOutput
-            );
+        if (hasSubcategories) {
+            setParentCategories(category.subcategories as CategoriesGetManyOutput);
             setSelectedCategory(category);
-
-            if (category.slug === "all") router.push("/");
-            else router.push(`/${category.slug}`);
-
             return;
         }
 
-        if (selectedCategory) {
+        if (parentCategories && selectedCategory) {
             router.push(`/${selectedCategory.slug}/${category.slug}`);
         } else {
-            router.push(`/${category.slug}`);
+            if (category.slug === "all") router.push("/");
+            else router.push(`/${category.slug}`);
         }
 
         handleOpenChange(false);
@@ -86,9 +77,9 @@ export const CategoriesSidebar = ({ open, onOpenChange }: Props) => {
                     {parentCategories && (
                         <button
                             onClick={handleBackClick}
-                            className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium cursor-pointer"
+                            className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                         >
-                            <ChevronLeftIcon className="size-4 mr-2" />
+                            <ChevronLeftIcon className="mr-2 size-4" />
                             Back
                         </button>
                     )}
@@ -97,10 +88,9 @@ export const CategoriesSidebar = ({ open, onOpenChange }: Props) => {
                         <button
                             key={category.slug}
                             onClick={() => handleCategoryClick(category)}
-                            className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
+                            className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium"
                         >
                             {category.name}
-
                             {category.subcategories?.length > 0 && (
                                 <ChevronRightIcon className="size-4" />
                             )}
