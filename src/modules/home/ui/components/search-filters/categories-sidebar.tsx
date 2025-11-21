@@ -25,10 +25,8 @@ export const CategoriesSidebar = () => {
 
     const router = useRouter();
 
-    const [parentCategories, setParentCategories] =
-        useState<CategoriesGetManyOutput | null>(null);
-    const [selectedCategory, setSelectedCategory] =
-        useState<CategoriesGetManyOutput[1] | null>(null);
+    const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<CategoriesGetManyOutput[1] | null>(null);
 
     const currentCategories = parentCategories ?? data ?? [];
 
@@ -39,22 +37,19 @@ export const CategoriesSidebar = () => {
     };
 
     const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
-        const hasSubcategories =
-            category.subcategories && category.subcategories.length > 0;
+        const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
-        // If this category has subcategories, show next list
         if (hasSubcategories) {
             setParentCategories(category.subcategories as CategoriesGetManyOutput);
             setSelectedCategory(category);
             return;
         }
 
-        // If we're inside subcategories
         if (parentCategories && selectedCategory) {
-            router.push(`/category/${selectedCategory.slug}/${category.slug}`);
+            router.push(`/${selectedCategory.slug}/${category.slug}`);
         } else {
             if (category.slug === "all") router.push("/");
-            else router.push(`/category/${category.slug}`);
+            else router.push(`/${category.slug}`);
         }
 
         handleOpenChange(false);
