@@ -1,5 +1,3 @@
-"use client";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Sheet,
@@ -15,11 +13,15 @@ import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
-import { useSidebar } from "@/providers/SidebarProvider";
+interface Props {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
 
-export const CategoriesSidebar = () => {
-    const { open, setOpen } = useSidebar();
-
+export const CategoriesSidebar = ({
+    open,
+    onOpenChange,
+}: Props) => {
     const trpc = useTRPC();
     const { data } = useQuery(trpc.categories.getMany.queryOptions());
 
@@ -28,36 +30,47 @@ export const CategoriesSidebar = () => {
     const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<CategoriesGetManyOutput[1] | null>(null);
 
+    // If we have parent categories, show those, otherwise show root categories
     const currentCategories = parentCategories ?? data ?? [];
 
-    const handleOpenChange = (openState: boolean) => {
+    const handleOpenChange = (open: boolean) => {
         setSelectedCategory(null);
         setParentCategories(null);
-        setOpen(openState);
+        onOpenChange(open);
     };
 
     const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
         const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
+        // If it has subcategories → open submenu
         if (hasSubcategories) {
             setParentCategories(category.subcategories as CategoriesGetManyOutput);
             setSelectedCategory(category);
             return;
         }
 
+        // If we reach here → no subcategories → navigate to page
+
+        // Navigating inside a submenu → /parent/child
         if (parentCategories && selectedCategory) {
             router.push(`/${selectedCategory.slug}/${category.slug}`);
         } else {
-            if (category.slug === "all") router.push("/");
-            else router.push(`/${category.slug}`);
+            // Main category
+            if (category.slug === "all") {
+                router.push("/");
+            } else {
+                router.push(`/${category.slug}`);
+            }
         }
 
         handleOpenChange(false);
     };
 
     const handleBackClick = () => {
-        setParentCategories(null);
-        setSelectedCategory(null);
+        if (parentCategories) {
+            setParentCategories(null);
+            setSelectedCategory(null);
+        }
     };
 
     const backgroundColor = selectedCategory?.color || "white";
@@ -77,9 +90,9 @@ export const CategoriesSidebar = () => {
                     {parentCategories && (
                         <button
                             onClick={handleBackClick}
-                            className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                            className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium cursor-pointer"
                         >
-                            <ChevronLeftIcon className="mr-2 size-4" />
+                            <ChevronLeftIcon className="size-4 mr-2" />
                             Back
                         </button>
                     )}
@@ -88,10 +101,10 @@ export const CategoriesSidebar = () => {
                         <button
                             key={category.slug}
                             onClick={() => handleCategoryClick(category)}
-                            className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium"
+                            className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
                         >
                             {category.name}
-                            {category.subcategories?.length > 0 && (
+                            {category.subcategories && category.subcategories.length > 0 && (
                                 <ChevronRightIcon className="size-4" />
                             )}
                         </button>
