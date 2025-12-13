@@ -250,11 +250,7 @@ export interface Product {
    * Price in Nigerian Naira (₦).
    */
   price: number;
-  category: string | Category;
-  /**
-   * Select the specific subcategory for this product.
-   */
-  subcategory?: (string | null) | Category;
+  category?: (string | null) | Category;
   tags?: (string | Tag)[] | null;
   /**
    * Upload a clear product image.
@@ -504,7 +500,6 @@ export interface ProductsSelect<T extends boolean = true> {
   description?: T;
   price?: T;
   category?: T;
-  subcategory?: T;
   tags?: T;
   image?: T;
   refundPolicy?: T;
