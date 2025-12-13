@@ -34,36 +34,47 @@ export const CategoriesSidebar = ({
     const currentCategories = parentCategories ?? data ?? [];
 
     const handleOpenChange = (open: boolean) => {
-        setSelectedCategory(null);
-        setParentCategories(null);
+        // Reset state only when closing (open === false)
+        if (!open) {
+             setSelectedCategory(null);
+             setParentCategories(null);
+        }
         onOpenChange(open);
     };
 
     const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
         const hasSubcategories = category.subcategories && category.subcategories.length > 0;
 
-        // If it has subcategories → open submenu
+        // If it has subcategories → open submenu (Drill Down)
         if (hasSubcategories) {
             setParentCategories(category.subcategories as CategoriesGetManyOutput);
             setSelectedCategory(category);
-            return;
+            return; // Exit function, no navigation
         }
 
         // If we reach here → no subcategories → navigate to page
+        let targetUrl: string;
 
         // Navigating inside a submenu → /parent/child
         if (parentCategories && selectedCategory) {
-            router.push(`/${selectedCategory.slug}/${category.slug}`);
+            targetUrl = `/${selectedCategory.slug}/${category.slug}`;
         } else {
             // Main category
             if (category.slug === "all") {
-                router.push("/");
+                targetUrl = "/";
             } else {
-                router.push(`/${category.slug}`);
+                targetUrl = `/${category.slug}`;
             }
         }
+        
+        // 1. Initiate Navigation
+        router.push(targetUrl);
 
-        handleOpenChange(false);
+        // 2. FIX: Delay the sidebar closure on mobile to prevent the navigation from being cancelled.
+        // The delay gives Next.js router time to register the push.
+        setTimeout(() => {
+            handleOpenChange(false);
+        }, 300); // 300ms is a safe value for mobile devices.
     };
 
     const handleBackClick = () => {
@@ -73,6 +84,7 @@ export const CategoriesSidebar = ({
         }
     };
 
+    // The color logic is fine, keeping it as is
     const backgroundColor = selectedCategory?.color || "white";
 
     return (
@@ -89,6 +101,7 @@ export const CategoriesSidebar = ({
                 <ScrollArea className="flex flex-col overflow-y-auto h-full pb-2">
                     {parentCategories && (
                         <button
+                            type="button" // Added for safety
                             onClick={handleBackClick}
                             className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium cursor-pointer"
                         >
@@ -99,6 +112,7 @@ export const CategoriesSidebar = ({
 
                     {currentCategories.map((category) => (
                         <button
+                            type="button" // Added for safety
                             key={category.slug}
                             onClick={() => handleCategoryClick(category)}
                             className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
