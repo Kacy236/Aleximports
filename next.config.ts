@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true, // ✅ replaces --no-lint
   },
 
+  webpack: (config) => config,
+
   images: {
     remotePatterns: [
       {
