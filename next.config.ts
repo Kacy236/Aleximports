@@ -2,8 +2,9 @@ import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true, // ✅ replaces --no-lint
+  // 🔴 THIS is the key line
+  experimental: {
+    forceSwcTransforms: true,
   },
 
   webpack: (config) => config,
