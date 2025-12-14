@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
 
 interface TenantCart {
   productIds: string[];
@@ -14,52 +13,45 @@ interface CartState {
   clearAllCarts: () => void;
 }
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      tenantCarts: {},
+export const useCartStore = create<CartState>((set, get) => ({
+  tenantCarts: {},
 
-      getCartByTenant: (tenantSlug) => get().tenantCarts[tenantSlug] || { productIds: [] },
+  getCartByTenant: (tenantSlug) =>
+    get().tenantCarts[tenantSlug] || { productIds: [] },
 
-      addProduct: (tenantSlug, productId) =>
-        set((state) => ({
-          tenantCarts: {
-            ...state.tenantCarts,
-            [tenantSlug]: {
-              productIds: [
-                ...(state.tenantCarts[tenantSlug]?.productIds || []),
-                productId,
-              ],
-            },
-          },
-        })),
+  addProduct: (tenantSlug, productId) =>
+    set((state) => ({
+      tenantCarts: {
+        ...state.tenantCarts,
+        [tenantSlug]: {
+          productIds: [
+            ...(state.tenantCarts[tenantSlug]?.productIds || []),
+            productId,
+          ],
+        },
+      },
+    })),
 
-      removeProduct: (tenantSlug, productId) =>
-        set((state) => ({
-          tenantCarts: {
-            ...state.tenantCarts,
-            [tenantSlug]: {
-              productIds:
-                state.tenantCarts[tenantSlug]?.productIds.filter(
-                  (id) => id !== productId
-                ) || [],
-            },
-          },
-        })),
+  removeProduct: (tenantSlug, productId) =>
+    set((state) => ({
+      tenantCarts: {
+        ...state.tenantCarts,
+        [tenantSlug]: {
+          productIds:
+            state.tenantCarts[tenantSlug]?.productIds.filter(
+              (id) => id !== productId
+            ) || [],
+        },
+      },
+    })),
 
-      clearCart: (tenantSlug) =>
-        set((state) => ({
-          tenantCarts: {
-            ...state.tenantCarts,
-            [tenantSlug]: { productIds: [] },
-          },
-        })),
+  clearCart: (tenantSlug) =>
+    set((state) => ({
+      tenantCarts: {
+        ...state.tenantCarts,
+        [tenantSlug]: { productIds: [] },
+      },
+    })),
 
-      clearAllCarts: () => set({ tenantCarts: {} }),
-    }),
-    {
-      name: "aleximport-cart",
-      storage: createJSONStorage(() => localStorage),
-    }
-  )
-);
+  clearAllCarts: () => set({ tenantCarts: {} }),
+}));
