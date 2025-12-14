@@ -2,20 +2,15 @@ import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 🔴 THIS is the key line
-  experimental: {
-    forceSwcTransforms: true,
-  },
-
-  webpack: (config) => config,
-
   images: {
     remotePatterns: [
+      // ✅ Allow Payload media hosted on your Vercel domain
       {
         protocol: "https",
         hostname: "aleximports.vercel.app",
         pathname: "/api/media/file/**",
       },
+      // ✅ Allow localhost for development
       {
         protocol: "http",
         hostname: "localhost",
