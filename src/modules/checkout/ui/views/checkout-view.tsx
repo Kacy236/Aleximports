@@ -5,7 +5,7 @@ import { useTRPC } from "@/trpc/client";
 import { InboxIcon, LoaderIcon } from "lucide-react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useCart } from "../../hooks/use-cart";
 import { generateTenantURL } from "@/lib/utils";
@@ -25,6 +25,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
 
     const trpc = useTRPC();
     const queryClient = useQueryClient();
+    
     const { data, error, isLoading } = useQuery(trpc.checkout.getProducts.queryOptions({
         ids: productIds,
     }));
@@ -38,17 +39,23 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
         onError: (error) => {
             if (error.data?.code === "UNAUTHORIZED") {
-                // TODO: Modify when subdomains enabled
                 router.push("/sign-in");
             }
             toast.error(error.message);
         },
     }));
 
+    // 💰 Calculation fix
+    const totalAmount = useMemo(() => {
+        return data?.docs.reduce((acc, product) => acc + (Number(product.price) || 0), 0) || 0;
+    }, [data?.docs]);
+
+    // 📚 Library Sync fix
     useEffect(() => {
         if (states.success) {
             setStates({ success: false, cancel: false });
             clearCart();
+            // Force refresh library data so new products appear immediately
             queryClient.invalidateQueries(trpc.library.getMany.infiniteQueryFilter());
             router.push("/library");
         }
@@ -68,23 +75,24 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         }
     }, [error, clearCart]);
 
-if (isLoading) {
-    return (
-        <div className="lg:pt-16 pt-4 px-4 lg:px-12">
-        <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
-           <LoaderIcon className="text-muted-foreground animate-spin" />     
-        </div>
-        </div>
-    )
-}
-
-    if (data?.totalDocs === 0) {
+    if (isLoading) {
         return (
             <div className="lg:pt-16 pt-4 px-4 lg:px-12">
-            <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
-                <InboxIcon />
-                <p className="text-base font-medium">No Products found</p>
+                <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
+                   <LoaderIcon className="text-muted-foreground animate-spin" />     
+                </div>
             </div>
+        );
+    }
+
+    // Updated check: Ensure we have data and actual documents
+    if (!data || !data.docs || data.docs.length === 0) {
+        return (
+            <div className="lg:pt-16 pt-4 px-4 lg:px-12">
+                <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
+                    <InboxIcon />
+                    <p className="text-base font-medium">No Products found</p>
+                </div>
             </div>
         );
     }
@@ -95,7 +103,7 @@ if (isLoading) {
  
                 <div className="lg:col-span-4">
                     <div className="border rounded-md overflow-hidden bg-white">
-                        {data?.docs.map((product, index) => (
+                        {data.docs.map((product, index) => (
                             <CheckoutItem
                               key={product.id}
                               isLast={index === data.docs.length - 1}
@@ -113,7 +121,7 @@ if (isLoading) {
 
                 <div className="lg:col-span-3">
                     <CheckoutSidebar
-                      total={data?.totalPrice || 0}
+                      total={totalAmount} 
                       onPurchase={() => purchase.mutate({ tenantSlug, productIds })}
                       isCanceled={states.cancel}
                       disabled={purchase.isPending}

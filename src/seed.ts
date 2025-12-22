@@ -1,14 +1,16 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
 
+// Configuration
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
 const NODE_ENV = process.env.NODE_ENV || "development";
+const IS_PROD = NODE_ENV === "production";
 
 /**
- * Utility: get a Paystack bank code from the bank name (production only)
+ * Utility: Fetch the correct Bank Code from Paystack
  */
 const getBankCode = async (bankName: string) => {
-  if (NODE_ENV !== "production") return "001"; // mock for dev/test
+  if (!IS_PROD) return "058"; // Mock GTB code for local testing
 
   try {
     const res = await fetch("https://api.paystack.co/bank", {
@@ -16,28 +18,30 @@ const getBankCode = async (bankName: string) => {
     });
 
     const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+
     const bank = data.data.find((b: any) =>
       b.name.toLowerCase().includes(bankName.toLowerCase())
     );
 
     return bank ? bank.code : null;
   } catch (err) {
-    console.warn("⚠️ Unable to fetch bank code:", err);
+    console.error("❌ Error fetching bank list:", err);
     return null;
   }
 };
 
 /**
- * Creates a Paystack subaccount safely
+ * Utility: Create the Live/Test Subaccount
  */
 const createPaystackSubaccount = async (
   tenantName: string,
   bankCode: string,
   accountNumber: string
 ) => {
-  if (NODE_ENV !== "production") {
-    console.log("🧪 Test mode: using mock Paystack subaccount.");
-    return { subaccount_code: "001", business_name: `${tenantName} (Test)` };
+  if (!IS_PROD) {
+    console.log("🧪 Test Environment: Skipping Paystack API call, using mock data.");
+    return { subaccount_code: "ACCT_MOCK_123", business_name: `${tenantName} (Test)` };
   }
 
   const response = await fetch("https://api.paystack.co/subaccount", {
@@ -50,19 +54,16 @@ const createPaystackSubaccount = async (
       business_name: tenantName,
       settlement_bank: bankCode,
       account_number: accountNumber,
-      percentage_charge: 0,
-      description: `Paystack subaccount for ${tenantName}`,
+      percentage_charge: 1.5, // Standard percentage
     }),
   });
 
   const data = await response.json();
 
   if (!response.ok) {
-    console.error("❌ Paystack Error:", data);
-    throw new Error(data.message || "Failed to create Paystack subaccount");
+    throw new Error(`Paystack API Error: ${data.message}`);
   }
 
-  console.log("✅ Paystack subaccount created:", data.data.subaccount_code);
   return data.data;
 };
 
@@ -335,23 +336,30 @@ const categories = [
   },
 ];
 
+// --- Main Seed Execution ---
 const seed = async () => {
+  console.log(`\n🚀 Initializing Seed in ${NODE_ENV.toUpperCase()} mode...`);
+  
   const payload = await getPayload({ config });
 
-  const tenantName = "admin";
-  const bankName = "Access Bank";
-  const accountNumber =
-    NODE_ENV !== "production" ? "0001234567" : "0690000031";
+  // 1. Setup Live Credentials
+  const tenantName = "Kelechi Paul Ndubuisi"; 
+  const bankName = "Zenith Bank";
+  const accountNumber = IS_PROD ? "2401536036" : "2401536036";
 
+  // 2. Resolve Bank Code
   const bankCode = await getBankCode(bankName);
-  if (!bankCode) throw new Error(`Bank code not found for ${bankName}`);
+  if (!bankCode) throw new Error(`Could not find code for ${bankName}`);
 
+  // 3. Create Subaccount (Real call in Live, Mock in Dev)
   const paystackAccount = await createPaystackSubaccount(
     tenantName,
     bankCode,
     accountNumber
   );
 
+  // 4. Create Tenant in Payload
+  console.log("📦 Creating Admin Tenant...");
   const adminTenant = await payload.create({
     collection: "tenants",
     data: {
@@ -364,19 +372,23 @@ const seed = async () => {
     },
   });
 
+  // 5. Create Super-Admin User
+  console.log("👤 Creating Super-Admin User...");
   await payload.create({
     collection: "users",
     data: {
       email: "ndubuisik216@gmail.com",
-      password: "demo",
+      password: "Kaycee#236", // CHANGE THIS IMMEDIATELY
       roles: ["super-admin"],
       username: "admin",
       tenants: [{ tenant: adminTenant.id }],
     },
   });
 
+  // 6. Seed Categories & Subcategories
+  console.log("📂 Seeding Categories...");
   for (const category of categories) {
-    const parentCategory = await payload.create({
+    const parent = await payload.create({
       collection: "categories",
       data: {
         name: category.name,
@@ -386,20 +398,23 @@ const seed = async () => {
       },
     });
 
-    for (const subCategory of category.subcategories || []) {
+    for (const sub of category.subcategories || []) {
       await payload.create({
         collection: "categories",
         data: {
-          name: subCategory.name,
-          slug: subCategory.slug,
-          parent: parentCategory.id,
+          name: sub.name,
+          slug: sub.slug,
+          parent: parent.id,
         },
       });
     }
   }
 
-  console.log("✅ Database seed completed successfully!");
+  console.log("\n✅ ALL DONE: Live seeding completed successfully!");
 };
 
-await seed();
-process.exit(0);
+// RUN
+seed().catch((err) => {
+  console.error("\n❌ SEED FAILED:", err.message);
+  process.exit(1);
+});

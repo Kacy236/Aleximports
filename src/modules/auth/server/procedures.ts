@@ -8,6 +8,10 @@ import { generateAuthCookie } from "../utils";
    PAYSTACK HELPERS
 ----------------------------------------------------------- */
 
+/**
+ * Creates a Transfer Recipient.
+ * Useful for manual payouts or tracking bank details in Paystack.
+ */
 const createPaystackRecipient = async (
   username: string,
   bankCode: string,
@@ -16,18 +20,13 @@ const createPaystackRecipient = async (
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
   const isTestMode = PAYSTACK_SECRET_KEY.startsWith("sk_test_");
 
-  // 🧪 Test mode: mock recipient
   if (isTestMode) {
-    const mockCode = "RCP_TEST_" + Math.floor(Math.random() * 1_000_000);
-    console.log("💡 Mocked Paystack recipient:", mockCode);
-
     return {
-      recipient_code: mockCode,
-      account_name: `${username} (Test)`,
+      recipient_code: `RCP_TEST_${Math.floor(Math.random() * 100000)}`,
+      account_name: `${username} (Test Account)`,
     };
   }
 
-  // LIVE MODE
   const response = await fetch("https://api.paystack.co/transferrecipient", {
     method: "POST",
     headers: {
@@ -44,32 +43,34 @@ const createPaystackRecipient = async (
   });
 
   const data = await response.json();
-
   if (!response.ok || !data.data?.recipient_code) {
-    console.error("❌ Paystack recipient error:", data);
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: data.message || "Failed to create Paystack recipient",
+      message: data.message || "Paystack could not verify bank details for recipient.",
     });
   }
 
   return data.data;
 };
 
-const createPaystackSubaccount = async (businessName: string) => {
+/**
+ * Creates a Subaccount with a LOCKED 10% Platform Fee.
+ * This ensures you get paid automatically on every transaction.
+ */
+const createPaystackSubaccount = async (
+  businessName: string,
+  bankCode: string,
+  accountNumber: string
+) => {
   const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
   const isTestMode = PAYSTACK_SECRET_KEY.startsWith("sk_test_");
 
-  // 🧪 Mock in test mode
   if (isTestMode) {
-    const mockCode = "SUB_TEST_" + Math.floor(Math.random() * 1_000_000);
-    console.log("💡 Mocked Paystack subaccount:", mockCode);
     return {
-      subaccount_code: mockCode,
+      subaccount_code: `SUB_TEST_${Math.floor(Math.random() * 100000)}`,
     };
   }
 
-  // LIVE MODE
   const response = await fetch("https://api.paystack.co/subaccount", {
     method: "POST",
     headers: {
@@ -78,19 +79,18 @@ const createPaystackSubaccount = async (businessName: string) => {
     },
     body: JSON.stringify({
       business_name: businessName,
-      settlement_bank: "044", // DEFAULT — replace if you want dynamic
-      account_number: "0001234567",
-      percentage_charge: 0, // platform fee handled in checkout
+      settlement_bank: bankCode,
+      account_number: accountNumber,
+      // 💸 THE FIX: Lock in your 10% platform fee here
+      percentage_charge: 10, 
     }),
   });
 
   const data = await response.json();
-
   if (!response.ok || !data.data?.subaccount_code) {
-    console.error("❌ Paystack subaccount error:", data);
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: data.message || "Failed to create Paystack subaccount",
+      message: data.message || "Failed to create Paystack subaccount.",
     });
   }
 
@@ -104,8 +104,7 @@ const createPaystackSubaccount = async (businessName: string) => {
 export const authRouter = createTRPCRouter({
   session: baseProcedure.query(async ({ ctx }) => {
     const headers = await getHeaders();
-    const session = await ctx.db.auth({ headers });
-    return session;
+    return await ctx.db.auth({ headers });
   }),
 
   register: baseProcedure
@@ -125,38 +124,38 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      /* STEP 2 — Create Paystack Recipient */
-      const bankCode = "001"; // Access Bank (test mode)
-      const accountNumber = "0001234567";
+      /* STEP 2 — Create Paystack Entities */
+      // We do these before creating the user so that if Paystack fails, 
+      // we don't end up with a "broken" user in our database.
       const paystackRecipient = await createPaystackRecipient(
         input.username,
-        bankCode,
-        accountNumber
+        input.bankCode,
+        input.accountNumber
       );
 
-      /* STEP 3 — Create Paystack Subaccount */
-      const paystackSub = await createPaystackSubaccount(input.username);
+      const paystackSub = await createPaystackSubaccount(
+        input.username,
+        input.bankCode,
+        input.accountNumber
+      );
 
-      /* STEP 4 — Create Tenant Profile */
+      /* STEP 3 — Create Tenant Profile */
       const tenant = await ctx.db.create({
         collection: "tenants",
         data: {
           name: input.username,
           slug: input.username,
-
-          bankCode,
-          accountNumber,
+          bankCode: input.bankCode,
+          accountNumber: input.accountNumber,
           accountName: paystackRecipient.account_name,
-
           paystackRecipientCode: paystackRecipient.recipient_code,
-          paystackSubaccountCode: paystackSub.subaccount_code,
-
-          platformFeePercentage: 10, // default fee
+          paystackSubaccountCode: paystackSub.subaccount_code, // 👈 Used for split payments
+          platformFeePercentage: 10,
           paystackDetailsSubmitted: true,
         },
       });
 
-      /* STEP 5 — Create User */
+      /* STEP 4 — Create User & Link to Tenant */
       await ctx.db.create({
         collection: "users",
         data: {
@@ -167,8 +166,8 @@ export const authRouter = createTRPCRouter({
         },
       });
 
-      /* STEP 6 — Auto-login */
-      const data = await ctx.db.login({
+      /* STEP 5 — Auto-login */
+      const loginData = await ctx.db.login({
         collection: "users",
         data: {
           email: input.email,
@@ -176,19 +175,19 @@ export const authRouter = createTRPCRouter({
         },
       });
 
-      if (!data.token) {
+      if (!loginData.token) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message: "Failed to login after registration",
+          message: "Registration successful, but auto-login failed.",
         });
       }
 
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
-        value: data.token,
+        value: loginData.token,
       });
 
-      return data;
+      return loginData;
     }),
 
   login: baseProcedure

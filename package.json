@@ -11,6 +11,7 @@
     "generate:types": "payload generate:types",
     "db:fresh": "payload migrate:fresh",
     "db:seed": "bun run src/seed.ts",
+    "db:seed:live": "cross-env NODE_ENV=production bun run ./src/seed.ts",
     "db:reset": "bun run db:fresh && bun run db:seed"
   },
   "dependencies": {
@@ -56,6 +57,7 @@
     "client-only": "0.0.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "cross-env": "^10.1.0",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "graphql": "^16.11.0",
