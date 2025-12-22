@@ -57,13 +57,13 @@ export const ProductCard = ({
 
                 {/* 2. Content Section */}
                 <div className="p-4 flex flex-col gap-3 flex-1">
-                    <h2 className="text-lg font-bold line-clamp-1 text-gray-900 group-hover:text-green-600 transition-colors">
+                    <h2 className="text-lg font-bold line-clamp-1 text-gray-900 transition-colors">
                         {name}
                     </h2>
                     
                     {/* Tenant Info Only */}
                     <div 
-                        className="flex items-center gap-2.5 mt-auto pt-2" 
+                        className="flex items-center gap-1.5 mt-auto pt-2" 
                         onClick={handleUserClick}
                     >
                         {tenantImageUrl && (
@@ -75,7 +75,8 @@ export const ProductCard = ({
                                 className="rounded-full border border-gray-300 shrink-0 size-[20px] object-cover"
                             />
                         )}
-                        <p className="text-sm font-semibold text-gray-600 hover:text-green-600 transition-colors cursor-pointer truncate">
+                        {/* Added underline and underline-offset-2 here */}
+                        <p className="text-sm font-semibold text-gray-600 hover:text-green-600 underline underline-offset-2 transition-colors cursor-pointer truncate">
                             {tenantSlug}
                         </p>
                     </div>
@@ -93,7 +94,7 @@ export const ProductCard = ({
                             </p>
                         </div>
                     ) : (
-                        <div /> // Empty div to keep price pushed to the right
+                        <div /> 
                     )}
 
                     {/* Price Tag */}
