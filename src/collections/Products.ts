@@ -68,12 +68,20 @@ export const Products: CollectionConfig = {
         description: "Price in Nigerian Naira (₦).",
       },
     },
-    {
-      name: "category",
-      type: "relationship",
-      relationTo: "categories",
-      hasMany: false,
+{
+  name: "category",
+  type: "relationship",
+  relationTo: "categories",
+  hasMany: false,
+  filterOptions: {
+    parent: {
+      exists: true,
     },
+  },
+  admin: {
+    description: "Select a subcategory (not a parent category)",
+  },
+},
     {
       name: "tags",
       type: "relationship",

@@ -250,6 +250,9 @@ export interface Product {
    * Price in Nigerian Naira (₦).
    */
   price: number;
+  /**
+   * Select a subcategory (not a parent category)
+   */
   category?: (string | null) | Category;
   tags?: (string | Tag)[] | null;
   /**
