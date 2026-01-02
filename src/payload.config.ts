@@ -20,22 +20,29 @@ import { Reviews } from './collections/Reviews'
 import { Config } from './payload-types'
 import { isSuperAdmin } from './lib/access'
 
+/* -------------------------------------------------
+   PATH SETUP
+-------------------------------------------------- */
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 /* -------------------------------------------------
-   ✅ CORS / CSRF SAFE ORIGINS
+   ✅ TYPE-SAFE CORS / CSRF ORIGINS
+   (Fixes Vercel + TS build error)
 -------------------------------------------------- */
-const ALLOWED_ORIGINS = [
-  process.env.PAYLOAD_PUBLIC_APP_URL, // https://www.aleximportsshop.store
+const ALLOWED_ORIGINS: string[] = [
+  process.env.PAYLOAD_PUBLIC_APP_URL,
   'https://www.aleximportsshop.store',
   'https://aleximportsshop.store',
   'http://localhost:3000',
-].filter(Boolean)
+].filter((origin): origin is string => typeof origin === 'string')
 
+/* -------------------------------------------------
+   PAYLOAD CONFIG
+-------------------------------------------------- */
 export default buildConfig({
   /* -------------------------------------------------
-     ✅ SERVER URL (Payload backend domain)
+     SERVER URL (Payload backend)
      Example:
      https://aleximports.vercel.app
      OR https://api.aleximportsshop.store
@@ -43,13 +50,13 @@ export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
 
   /* -------------------------------------------------
-     ✅ CORS + CSRF (FIXED)
+     ✅ CORS + CSRF (FIXED & SAFE)
   -------------------------------------------------- */
   cors: ALLOWED_ORIGINS,
   csrf: ALLOWED_ORIGINS,
 
   /* -------------------------------------------------
-     ADMIN CONFIG
+     ADMIN
   -------------------------------------------------- */
   admin: {
     user: Users.slug,
