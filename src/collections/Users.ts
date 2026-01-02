@@ -18,8 +18,6 @@ const defaultTenantArrayField = tenantsArrayField({
   },
 })
 
-const PROD_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, '')
-
 export const Users: CollectionConfig = {
   slug: 'users',
   access: {
@@ -28,8 +26,9 @@ export const Users: CollectionConfig = {
     delete: ({ req }) => isSuperAdmin(req.user),
     update: ({ req, id }) => {
       if (isSuperAdmin(req.user)) return true;
+
       return req.user?.id === id;
-    },
+    }
   },
   admin: {
     useAsTitle: 'email',
@@ -37,21 +36,13 @@ export const Users: CollectionConfig = {
   },
   auth: {
     cookies: {
-      // Token cookie
-      token: {
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? PROD_DOMAIN : undefined,
+      ...(process.env.NODE_ENV !== "development" && {
+        sameSite: "None",
+        secure: true,
+        //domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, "").split('/')[0],
         maxAge: 60 * 60 * 24 * 7, // 7 days
-      },
-      // Refresh token cookie
-      refreshToken: {
-        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? PROD_DOMAIN : undefined,
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-      },
-    },
+    }),
+   },
   },
   fields: [
     {
@@ -71,14 +62,14 @@ export const Users: CollectionConfig = {
       options: ["super-admin", "user"],
       access: {
         update: ({ req }) => isSuperAdmin(req.user),
-      },
+      }
     },
     {
       ...defaultTenantArrayField,
       admin: {
         ...(defaultTenantArrayField?.admin || {}),
-        position: "sidebar",
-      },
-    },
+          position: "sidebar",
+      }
+    }
   ],
 };
