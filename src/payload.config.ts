@@ -15,33 +15,18 @@ import { Categories } from './collections/Categories'
 import { Products } from './collections/Products'
 import { Tags } from './collections/Tags'
 import { Tenants } from './collections/Tenants'
+import { Config } from './payload-types'
 import { Orders } from './collections/Orders'
 import { Reviews } from './collections/Reviews'
-import { Config } from './payload-types'
 import { isSuperAdmin } from './lib/access'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const ALLOWED_ORIGINS: string[] = [
-  process.env.PAYLOAD_PUBLIC_APP_URL,
-  'https://www.aleximportsshop.store',
-  'https://aleximportsshop.store',
-  'http://localhost:3000',
-].filter((origin): origin is string => typeof origin === 'string')
-
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
-
-  cors: {
-    origins: ALLOWED_ORIGINS,
-    headers: [
-      'Content-Type',
-      'Authorization',
-      'X-Payload-HTTP-Method-Override',
-    ],
-  },
-  csrf: ALLOWED_ORIGINS,
+  cors: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
+  csrf: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
 
   admin: {
     user: Users.slug,
@@ -49,23 +34,14 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      beforeNavLinks: ['@/components/paystack-verify#PaystackVerify'],
+      beforeNavLinks: ["@/components/paystack-verify#PaystackVerify"],
     },
-    // Removed faulty logoutRoute/cookieOptions to pass build
   },
 
-  collections: [
-    Users,
-    Media,
-    Categories,
-    Products,
-    Tags,
-    Tenants,
-    Orders,
-    Reviews,
-  ],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Orders, Reviews],
 
   editor: lexicalEditor(),
+
   secret: process.env.PAYLOAD_SECRET || '',
 
   typescript: {
@@ -80,7 +56,6 @@ export default buildConfig({
 
   plugins: [
     payloadCloudPlugin(),
-
     multiTenantPlugin<Config>({
       collections: {
         products: {},
@@ -91,7 +66,6 @@ export default buildConfig({
       },
       userHasAccessToAllTenants: (user) => isSuperAdmin(user),
     }),
-
     vercelBlobStorage({
       enabled: true,
       collections: {
