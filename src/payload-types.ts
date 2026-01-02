@@ -231,7 +231,7 @@ export interface Product {
   /**
    * A short product description for display in listings.
    */
-  description?: {
+  description: {
     root: {
       type: string;
       children: {
@@ -245,7 +245,7 @@ export interface Product {
       version: number;
     };
     [k: string]: unknown;
-  } | null;
+  };
   /**
    * Price in Nigerian Naira (₦).
    */
@@ -253,7 +253,7 @@ export interface Product {
   /**
    * Select a subcategory (not a parent category)
    */
-  category?: (string | null) | Category;
+  category: string | Category;
   tags?: (string | Tag)[] | null;
   /**
    * Upload a clear product image.

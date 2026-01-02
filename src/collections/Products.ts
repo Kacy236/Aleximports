@@ -55,6 +55,7 @@ export const Products: CollectionConfig = {
     },
     {
       name: "description",
+      required: true,
       type: "richText",
       admin: {
         description: "A short product description for display in listings.",
@@ -68,20 +69,21 @@ export const Products: CollectionConfig = {
         description: "Price in Nigerian Naira (₦).",
       },
     },
-{
-  name: "category",
-  type: "relationship",
-  relationTo: "categories",
-  hasMany: false,
-  filterOptions: {
-    parent: {
-      exists: true,
+    {
+      name: "category",
+      type: "relationship",
+      relationTo: "categories",
+      required: true,
+      hasMany: false,
+      filterOptions: {
+        parent: {
+          exists: true,
+        },
+      },
+      admin: {
+        description: "Select a subcategory (not a parent category)",
+      },
     },
-  },
-  admin: {
-    description: "Select a subcategory (not a parent category)",
-  },
-},
     {
       name: "tags",
       type: "relationship",
