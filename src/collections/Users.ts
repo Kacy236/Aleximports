@@ -36,16 +36,10 @@ export const Users: CollectionConfig = {
   auth: {
     // This is the core fix for logout
     cookies: {
-      ...(process.env.NODE_ENV !== "development" ? {
+      ...(process.env.NODE_ENV !== "development" && {
         sameSite: "None", 
         secure: true,
-        // ✅ CRITICAL: The 'domain' property is removed. 
-        // This ensures the browser doesn't lock the cookie to a specific domain 
-        // that the Vercel backend isn't allowed to clear.
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      } : {
-        sameSite: "Lax",
-        secure: false,
+        domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
       }),
     },
   },
