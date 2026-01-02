@@ -52,7 +52,14 @@ export default buildConfig({
   /* -------------------------------------------------
      ✅ CORS + CSRF (FIXED & SAFE)
   -------------------------------------------------- */
-  cors: ALLOWED_ORIGINS,
+    cors: {
+    origins: ALLOWED_ORIGINS,
+    headers: [
+      'Content-Type',
+      'Authorization',
+      'X-Payload-HTTP-Method-Override',
+    ],
+  },
   csrf: ALLOWED_ORIGINS,
 
   /* -------------------------------------------------
