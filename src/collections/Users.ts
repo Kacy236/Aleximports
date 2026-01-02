@@ -26,7 +26,6 @@ export const Users: CollectionConfig = {
     delete: ({ req }) => isSuperAdmin(req.user),
     update: ({ req, id }) => {
       if (isSuperAdmin(req.user)) return true;
-
       return req.user?.id === id;
     }
   },
@@ -35,14 +34,20 @@ export const Users: CollectionConfig = {
     hidden: ({ user }) => !isSuperAdmin(user),
   },
   auth: {
+    // This is the core fix for logout
     cookies: {
-      ...(process.env.NODE_ENV !== "development" && {
-        sameSite: "None",
+      ...(process.env.NODE_ENV !== "development" ? {
+        sameSite: "None", 
         secure: true,
-        //domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, "").split('/')[0],
+        // ✅ CRITICAL: The 'domain' property is removed. 
+        // This ensures the browser doesn't lock the cookie to a specific domain 
+        // that the Vercel backend isn't allowed to clear.
         maxAge: 60 * 60 * 24 * 7, // 7 days
-    }),
-   },
+      } : {
+        sameSite: "Lax",
+        secure: false,
+      }),
+    },
   },
   fields: [
     {
@@ -68,7 +73,7 @@ export const Users: CollectionConfig = {
       ...defaultTenantArrayField,
       admin: {
         ...(defaultTenantArrayField?.admin || {}),
-          position: "sidebar",
+        position: "sidebar",
       }
     }
   ],

@@ -20,16 +20,9 @@ import { Reviews } from './collections/Reviews'
 import { Config } from './payload-types'
 import { isSuperAdmin } from './lib/access'
 
-/* -------------------------------------------------
-   PATH SETUP
--------------------------------------------------- */
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-/* -------------------------------------------------
-   ✅ TYPE-SAFE CORS / CSRF ORIGINS
-   (Fixes Vercel + TS build error)
--------------------------------------------------- */
 const ALLOWED_ORIGINS: string[] = [
   process.env.PAYLOAD_PUBLIC_APP_URL,
   'https://www.aleximportsshop.store',
@@ -37,22 +30,10 @@ const ALLOWED_ORIGINS: string[] = [
   'http://localhost:3000',
 ].filter((origin): origin is string => typeof origin === 'string')
 
-/* -------------------------------------------------
-   PAYLOAD CONFIG
--------------------------------------------------- */
 export default buildConfig({
-  /* -------------------------------------------------
-     SERVER URL (Payload backend)
-     Example:
-     https://aleximports.vercel.app
-     OR https://api.aleximportsshop.store
-  -------------------------------------------------- */
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
 
-  /* -------------------------------------------------
-     ✅ CORS + CSRF (FIXED & SAFE)
-  -------------------------------------------------- */
-    cors: {
+  cors: {
     origins: ALLOWED_ORIGINS,
     headers: [
       'Content-Type',
@@ -62,9 +43,6 @@ export default buildConfig({
   },
   csrf: ALLOWED_ORIGINS,
 
-  /* -------------------------------------------------
-     ADMIN
-  -------------------------------------------------- */
   admin: {
     user: Users.slug,
     importMap: {
@@ -73,11 +51,9 @@ export default buildConfig({
     components: {
       beforeNavLinks: ['@/components/paystack-verify#PaystackVerify'],
     },
+    // Removed faulty logoutRoute/cookieOptions to pass build
   },
 
-  /* -------------------------------------------------
-     COLLECTIONS
-  -------------------------------------------------- */
   collections: [
     Users,
     Media,
@@ -89,35 +65,19 @@ export default buildConfig({
     Reviews,
   ],
 
-  /* -------------------------------------------------
-     EDITOR
-  -------------------------------------------------- */
   editor: lexicalEditor(),
-
-  /* -------------------------------------------------
-     SECURITY
-  -------------------------------------------------- */
   secret: process.env.PAYLOAD_SECRET || '',
 
-  /* -------------------------------------------------
-     TYPESCRIPT
-  -------------------------------------------------- */
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
 
-  /* -------------------------------------------------
-     DATABASE
-  -------------------------------------------------- */
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
   }),
 
   sharp,
 
-  /* -------------------------------------------------
-     PLUGINS
-  -------------------------------------------------- */
   plugins: [
     payloadCloudPlugin(),
 
