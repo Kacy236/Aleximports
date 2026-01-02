@@ -15,47 +15,98 @@ import { Categories } from './collections/Categories'
 import { Products } from './collections/Products'
 import { Tags } from './collections/Tags'
 import { Tenants } from './collections/Tenants'
-import { Config } from './payload-types'
 import { Orders } from './collections/Orders'
 import { Reviews } from './collections/Reviews'
+import { Config } from './payload-types'
 import { isSuperAdmin } from './lib/access'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-export default buildConfig({
-  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
-  cors: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
-  csrf: [process.env.PAYLOAD_PUBLIC_APP_URL || 'http://localhost:3000'],
+/* -------------------------------------------------
+   ✅ CORS / CSRF SAFE ORIGINS
+-------------------------------------------------- */
+const ALLOWED_ORIGINS = [
+  process.env.PAYLOAD_PUBLIC_APP_URL, // https://www.aleximportsshop.store
+  'https://www.aleximportsshop.store',
+  'https://aleximportsshop.store',
+  'http://localhost:3000',
+].filter(Boolean)
 
+export default buildConfig({
+  /* -------------------------------------------------
+     ✅ SERVER URL (Payload backend domain)
+     Example:
+     https://aleximports.vercel.app
+     OR https://api.aleximportsshop.store
+  -------------------------------------------------- */
+  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
+
+  /* -------------------------------------------------
+     ✅ CORS + CSRF (FIXED)
+  -------------------------------------------------- */
+  cors: ALLOWED_ORIGINS,
+  csrf: ALLOWED_ORIGINS,
+
+  /* -------------------------------------------------
+     ADMIN CONFIG
+  -------------------------------------------------- */
   admin: {
     user: Users.slug,
     importMap: {
       baseDir: path.resolve(dirname),
     },
     components: {
-      beforeNavLinks: ["@/components/paystack-verify#PaystackVerify"],
+      beforeNavLinks: ['@/components/paystack-verify#PaystackVerify'],
     },
   },
 
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Orders, Reviews],
+  /* -------------------------------------------------
+     COLLECTIONS
+  -------------------------------------------------- */
+  collections: [
+    Users,
+    Media,
+    Categories,
+    Products,
+    Tags,
+    Tenants,
+    Orders,
+    Reviews,
+  ],
 
+  /* -------------------------------------------------
+     EDITOR
+  -------------------------------------------------- */
   editor: lexicalEditor(),
 
+  /* -------------------------------------------------
+     SECURITY
+  -------------------------------------------------- */
   secret: process.env.PAYLOAD_SECRET || '',
 
+  /* -------------------------------------------------
+     TYPESCRIPT
+  -------------------------------------------------- */
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
 
+  /* -------------------------------------------------
+     DATABASE
+  -------------------------------------------------- */
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
   }),
 
   sharp,
 
+  /* -------------------------------------------------
+     PLUGINS
+  -------------------------------------------------- */
   plugins: [
     payloadCloudPlugin(),
+
     multiTenantPlugin<Config>({
       collections: {
         products: {},
@@ -66,6 +117,7 @@ export default buildConfig({
       },
       userHasAccessToAllTenants: (user) => isSuperAdmin(user),
     }),
+
     vercelBlobStorage({
       enabled: true,
       collections: {
