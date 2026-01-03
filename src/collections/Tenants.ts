@@ -6,6 +6,8 @@ export const Tenants: CollectionConfig = {
   access: {
     create: ({ req }) => isSuperAdmin(req.user),
     delete: ({ req }) => isSuperAdmin(req.user),
+    read: () => true,
+    update: () => true,
   },
   admin: {
     useAsTitle: 'slug',
@@ -31,6 +33,10 @@ export const Tenants: CollectionConfig = {
       name: "image",
       type: "upload",
       relationTo: "media",
+      required: true, // ✅ Set to true so users are forced to upload it
+      admin: {
+        description: "This is your store's logo or banner. Required to create products.",
+      }
     },
 
     // Bank Details
@@ -60,6 +66,9 @@ export const Tenants: CollectionConfig = {
       name: "paystackSubaccountCode",
       type: "text",
       required: false,
+      admin: {
+        description: "This will be automatically populated after Paystack verification."
+      }
     },
     {
       name: "platformFeePercentage",

@@ -169,11 +169,17 @@ export interface Tenant {
   id: string;
   name: string;
   slug: string;
-  image?: (string | null) | Media;
+  /**
+   * This is your store's logo or banner. Required to create products.
+   */
+  image: string | Media;
   bankCode: string;
   accountNumber: string;
   accountName?: string | null;
   paystackRecipientCode?: string | null;
+  /**
+   * This will be automatically populated after Paystack verification.
+   */
   paystackSubaccountCode?: string | null;
   platformFeePercentage?: number | null;
   paystackDetailsSubmitted?: boolean | null;
@@ -219,7 +225,7 @@ export interface Category {
   createdAt: string;
 }
 /**
- * You must complete your Paystack verification (subaccount) before creating products.
+ * CRITICAL: You must upload a Store Image and complete Paystack verification in 'Store Settings' before you can create products.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
@@ -264,7 +270,7 @@ export interface Product {
    */
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   /**
-   * Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).
+   * Protected content visible only after purchase. Supports markdown formatting.
    */
   content?: {
     root: {
