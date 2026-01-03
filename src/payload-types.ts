@@ -225,7 +225,7 @@ export interface Category {
   createdAt: string;
 }
 /**
- * CRITICAL: You must upload a Store Image and complete Paystack verification in 'Store Settings' before you can create products.
+ * You must complete your Paystack verification (subaccount) before creating products.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
@@ -270,7 +270,7 @@ export interface Product {
    */
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   /**
-   * Protected content visible only after purchase. Supports markdown formatting.
+   * Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).
    */
   content?: {
     root: {
