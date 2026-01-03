@@ -39,7 +39,8 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
         onError: (error) => {
             if (error.data?.code === "UNAUTHORIZED") {
-                router.push("/sign-in");
+                window.location.href = "https://aleximportsshop.store/sign-in";
+                return;
             }
             toast.error(error.message);
         },
