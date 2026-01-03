@@ -33,7 +33,7 @@ export const Tenants: CollectionConfig = {
       name: "image",
       type: "upload",
       relationTo: "media",
-      required: true, // ✅ Set to true so users are forced to upload it
+      required: false, 
       admin: {
         description: "This is your store's logo or banner. Required to create products.",
       }
