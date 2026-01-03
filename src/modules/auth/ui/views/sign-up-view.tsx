@@ -138,7 +138,7 @@ export const SignUpView = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-base">
-                    Username
+                    User/storename
                   </FormLabel>
                   <FormControl>
                     <Input
