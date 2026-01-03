@@ -172,7 +172,7 @@ export interface Tenant {
   /**
    * This is your store's logo or banner. Required to create products.
    */
-  image: string | Media;
+  image?: (string | null) | Media;
   bankCode: string;
   accountNumber: string;
   accountName?: string | null;
