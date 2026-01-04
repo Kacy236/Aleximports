@@ -37,6 +37,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
     const [isCopied, setIsCopied] = useState(false);
     
+    // --- MULTIPLE IMAGES STATE ---
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const images = data.images || [];
     const currentDisplayImage = images[selectedImageIndex]?.image?.url || "/placeholder.png";
@@ -53,7 +54,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
                 {/* Main Image Display */}
-                <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50 overflow-hidden">
+                <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
                     <Image
                         src={currentDisplayImage}
                         alt={data.name}
@@ -62,37 +63,34 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         priority
                     />
 
-                    {/* Arrow Navigation with Pointer and Slide effect */}
+                    {/* Arrow Navigation */}
                     {images.length > 1 && (
                         <>
                             <button 
                                 onClick={prevImage}
                                 className={cn(
-                                    "absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 shadow-xl border border-neutral-200 text-black transition-all duration-300",
-                                    "cursor-pointer", // ✅ Added pointer cursor
-                                    "opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0", 
-                                    "hover:scale-110 hover:bg-white hover:text-green-600 hover:border-green-500/30" 
+                                    "absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full shadow-lg transition-all duration-200",
+                                    "bg-white/90 opacity-0 group-hover:opacity-100 focus:opacity-100",
+                                    "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Previous image"
                             >
-                                <ChevronLeft className="size-6" />
+                                <ChevronLeft className="size-6 transition-colors" />
                             </button>
-
                             <button 
                                 onClick={nextImage}
                                 className={cn(
-                                    "absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full bg-white/90 shadow-xl border border-neutral-200 text-black transition-all duration-300",
-                                    "cursor-pointer", // ✅ Added pointer cursor
-                                    "opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0", 
-                                    "hover:scale-110 hover:bg-white hover:text-green-600 hover:border-green-500/30" 
+                                    "absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full shadow-lg transition-all duration-200",
+                                    "bg-white/90 opacity-0 group-hover:opacity-100 focus:opacity-100",
+                                    "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Next image"
                             >
-                                <ChevronRight className="size-6" />
+                                <ChevronRight className="size-6 transition-colors" />
                             </button>
                             
                             {/* Centered Image Counter */}
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/10 select-none">
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
                         </>
@@ -100,7 +98,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-6">
-                    {/* ... (rest of the component remains the same) ... */}
                     <div className="col-span-4">
                         <div className="p-6">
                             <h1 className="text-4xl font-medium">{data.name}</h1>
@@ -139,18 +136,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                         {data.reviewCount} ratings
                                     </p>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div className="block lg:hidden px-6 py-4 items-center justify-center border-b">
-                            <div className="flex items-center gap-2">
-                                    <StarRating
-                                      rating={data.reviewRating}
-                                      iconClassName="size-4"
-                                    />
-                                    <p className="text-base font-medium">
-                                        {data.reviewCount} ratings
-                                    </p>
                             </div>
                         </div>
 
@@ -208,9 +193,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                         <p className="text-base">{data.reviewCount} ratings</p>
                                     </div>
                                 </div>
-                                <div
-                                  className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4"
-                                >
+                                <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4">
                                 {[5, 4, 3, 2, 1].map((stars) => (
                                     <Fragment key={stars}>
                                         <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
@@ -232,3 +215,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         </div>
     );
 };
+
+export const ProductViewSkeleton = () => {
+    return (
+        <div className="px-4 lg:px-12 py-10">
+          <div className="border rounded-sm bg-white overflow-hidden">
+              <div className="relative aspect-video border-b bg-neutral-200 animate-pulse" />
+              <div className="p-6 space-y-4">
+                  <div className="h-10 w-1/3 bg-neutral-200 rounded animate-pulse" />
+                  <div className="h-20 w-full bg-neutral-200 rounded animate-pulse" />
+              </div>
+          </div>
+        </div>
+    )
+}
