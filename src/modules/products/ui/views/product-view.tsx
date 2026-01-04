@@ -3,7 +3,8 @@
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { LinkIcon, StarIcon, CheckIcon } from "lucide-react";
+// ✅ Added Chevron icons
+import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -42,11 +43,20 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const images = data.images || [];
     const currentDisplayImage = images[selectedImageIndex]?.image?.url || "/placeholder.png";
 
+    // ✅ Handlers for Arrow Navigation
+    const nextImage = () => {
+        setSelectedImageIndex((prev) => (prev + 1) % images.length);
+    };
+
+    const prevImage = () => {
+        setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    };
+
     return (
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
                 {/* Main Image Display */}
-                <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
+                <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
                     <Image
                         src={currentDisplayImage}
                         alt={data.name}
@@ -54,6 +64,31 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         className="object-contain"
                         priority
                     />
+
+                    {/* ✅ Arrow Navigation UI */}
+                    {images.length > 1 && (
+                        <>
+                            <button 
+                                onClick={prevImage}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                aria-label="Previous image"
+                            >
+                                <ChevronLeft className="size-6" />
+                            </button>
+                            <button 
+                                onClick={nextImage}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                aria-label="Next image"
+                            >
+                                <ChevronRight className="size-6" />
+                            </button>
+                            
+                            {/* Optional: Image Counter Overlay */}
+                            <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
+                                {selectedImageIndex + 1} / {images.length}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* --- THUMBNAIL STRIP --- */}
@@ -171,7 +206,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 </div>
 
                                 <p className="text-center font-medium">
-                                    {/* ✅ FIX: Optional chaining and nullish coalescing for refundPolicy */}
                                     {data.refundPolicy === "no-refunds"
                                       ? "No refunds"
                                       : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} money back guarantee`
@@ -194,7 +228,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 {[5, 4, 3, 2, 1].map((stars) => (
                                     <Fragment key={stars}>
                                         <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
-                                        {/* ✅ FIX: Added null safety for ratingDistribution lookup */}
                                         <Progress 
                                           value={data.ratingDistribution?.[stars] ?? 0}
                                           className="h-[1lh]"
