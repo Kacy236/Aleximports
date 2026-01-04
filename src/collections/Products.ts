@@ -42,14 +42,14 @@ export const Products: CollectionConfig = {
   },
 
   admin: {
-    useAsTitle: "name",
+    useAsTitle: "product name",
     description:
       "You must complete your Paystack verification (subaccount) before creating products.",
   },
 
   fields: [
     {
-      name: "name",
+      name: "product name",
       type: "text",
       required: true,
     },
@@ -91,14 +91,18 @@ export const Products: CollectionConfig = {
       hasMany: true,
     },
     {
-      name: "image",
-      type: "upload",
-      relationTo: "media",
-      required: true,
-      admin: {
-        description: "Upload a clear product image.",
-      },
-    },
+  name: "images",
+  label: "Product Images",
+  type: "upload",
+  relationTo: "media",
+  required: true,
+  hasMany: true,
+  admin: {
+    description:
+      "Upload multiple images (main image, angles, variants, etc). First image is used as the main image.",
+  },
+},
+
     {
       name: "refundPolicy",
       type: "select",
@@ -125,7 +129,7 @@ export const Products: CollectionConfig = {
     },
     {
         name: "isPrivate",
-        label: "Private",
+        label: "Sold out",
         defaultValue: false,
         type: "checkbox",
         admin: {
