@@ -92,18 +92,14 @@ export const Products: CollectionConfig = {
       hasMany: true,
     },
     {
-  name: "images",
-  label: "Product Images",
-  type: "upload",
-  relationTo: "media",
-  required: true,
-  hasMany: true,
-  admin: {
-    description:
-      "Upload multiple images (main image, angles, variants, etc). First image is used as the main image.",
-  },
-},
-
+      name: "image",
+      type: "upload",
+      relationTo: "media",
+      required: true,
+      admin: {
+        description: "Upload a clear product image.",
+      },
+    },
     {
       name: "refundPolicy",
       type: "select",
@@ -130,7 +126,7 @@ export const Products: CollectionConfig = {
     },
     {
         name: "isPrivate",
-        label: "Sold out",
+        label: "Private",
         defaultValue: false,
         type: "checkbox",
         admin: {
