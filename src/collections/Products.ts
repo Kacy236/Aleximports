@@ -96,6 +96,7 @@ export const Products: CollectionConfig = {
     {
       name: "images",
       label: "Product Images",
+      required: true,
       type: "array",
       minRows: 2,
       admin: {
