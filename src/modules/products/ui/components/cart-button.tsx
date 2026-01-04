@@ -14,7 +14,7 @@ interface Props {
 export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
     const [isMounted, setIsMounted] = useState(false);
     
-    // ✅ FIX: Pass the tenantSlug to the hook
+    // Pass the tenantSlug as required by your hook
     const cart = useCart(tenantSlug); 
 
     useEffect(() => {
@@ -41,16 +41,17 @@ export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
         );
     }
 
-    // ✅ Match the new store properties (items, addItem, removeItem)
-    // If your store still uses 'products' instead of 'items', change this to cart.products
-    const isInCart = cart.items.some(item => item.id === productId);
+    // ✅ FIX: Using the function your store actually provides
+    const isInCart = cart.isProductInCart(productId);
 
     const handleCartAction = () => {
         if (isInCart) {
-            cart.removeItem(productId);
+            // ✅ FIX: Use removeProduct instead of removeItem
+            cart.removeProduct(productId);
         } else {
-            // Adding 1 unit by default from the product page
-            cart.addItem({ id: productId, quantity: 1 });
+            // ✅ FIX: Use addProduct instead of addItem
+            // Note: Your store's addProduct takes a string (id), not an object
+            cart.addProduct(productId);
         }
     };
 
