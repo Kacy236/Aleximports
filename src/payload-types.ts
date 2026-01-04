@@ -261,9 +261,14 @@ export interface Product {
   category: string | Category;
   tags?: (string | Tag)[] | null;
   /**
-   * Upload a clear product image.
+   * Upload one or more product images. The first image will be used as the thumbnail.
    */
-  image: string | Media;
+  images?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
   /**
    * Choose the refund policy for this product.
    */
@@ -508,7 +513,12 @@ export interface ProductsSelect<T extends boolean = true> {
   price?: T;
   category?: T;
   tags?: T;
-  image?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
   refundPolicy?: T;
   content?: T;
   isPrivate?: T;

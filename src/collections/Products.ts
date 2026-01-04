@@ -1,5 +1,4 @@
 import { isSuperAdmin } from "@/lib/access";
-
 import type { CollectionConfig } from "payload";
 import type { Tenant } from "@/payload-types";
 
@@ -14,13 +13,11 @@ export const Products: CollectionConfig = {
       // ✅ Handle tenant being an object or a string
       const tenantRel = req.user?.tenants?.[0]?.tenant;
       const tenantId =
-      typeof tenantRel === "object"
-        ? (tenantRel as any).id || (tenantRel as any)._id
-        : tenantRel;
-    
+        typeof tenantRel === "object"
+          ? (tenantRel as any).id || (tenantRel as any)._id
+          : tenantRel;
 
       if (!tenantId) {
-        
         return false;
       }
 
@@ -52,7 +49,7 @@ export const Products: CollectionConfig = {
       name: "name",
       type: "text",
       required: true,
-      label: "product name"
+      label: "Product Name",
     },
     {
       name: "description",
@@ -91,15 +88,25 @@ export const Products: CollectionConfig = {
       relationTo: "tags",
       hasMany: true,
     },
+    // --- MULTIPLE IMAGES FIX START ---
     {
-      name: "image",
-      type: "upload",
-      relationTo: "media",
-      required: true,
+      name: "images",
+      label: "Product Images",
+      type: "array",
+      minRows: 1,
       admin: {
-        description: "Upload a clear product image.",
+        description: "Upload one or more product images. The first image will be used as the thumbnail.",
       },
+      fields: [
+        {
+          name: "image",
+          type: "upload",
+          relationTo: "media",
+          required: true,
+        },
+      ],
     },
+    // --- MULTIPLE IMAGES FIX END ---
     {
       name: "refundPolicy",
       type: "select",
@@ -125,22 +132,22 @@ export const Products: CollectionConfig = {
       },
     },
     {
-        name: "isPrivate",
-        label: "Private",
-        defaultValue: false,
-        type: "checkbox",
-        admin: {
-            description: "If checked, this product will not be shown on the public storefront"
-        },
+      name: "isPrivate",
+      label: "Private",
+      defaultValue: false,
+      type: "checkbox",
+      admin: {
+        description: "If checked, this product will not be shown on the public storefront",
+      },
     },
     {
-        name: "isArchived",
-        label: "Archive",
-        defaultValue: false,
-        type: "checkbox",
-        admin: {
-            description: "If checked, this product will be archived"
-        },
+      name: "isArchived",
+      label: "Archive",
+      defaultValue: false,
+      type: "checkbox",
+      admin: {
+        description: "If checked, this product will be archived",
+      },
     },
   ],
 };

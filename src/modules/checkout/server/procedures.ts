@@ -169,7 +169,7 @@ export const checkoutRouter = createTRPCRouter({
       // Fetch products scoped to tenant slug
       const products = await ctx.db.find({
         collection: "products",
-        depth: 2,
+        depth: 1, // Depth 1 is enough for IDs and names used in metadata
         where: {
           and: [
             { id: { in: input.productIds } },
@@ -195,22 +195,16 @@ export const checkoutRouter = createTRPCRouter({
       // Ensure tenant has a Paystack subaccount code — if not, try to create it
       if (!tenant.paystackSubaccountCode) {
         console.log("Tenant missing subaccount code, attempting to create it before purchase.");
-        // Attempt to call verify flow server-side (idempotent and same user is tenant owner)
         try {
-          // We attempt to create a subaccount using server privileges.
-          // Note: ctx.session.user may be the buyer (not the tenant owner). We still proceed because creation uses tenant.bankCode/accountNumber.
-          // If creation fails, the error will be caught below and we will return an informative message.
           await ctx.db.update({
             collection: "tenants",
             id: tenant.id,
             data: { platformFeePercentage: Number(tenant.platformFeePercentage ?? 10) },
           });
 
-          // call Paystack to create a subaccount (same logic as verify)
           const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
           const platformFeePercentage = Number(tenant.platformFeePercentage ?? 10);
 
-          // For safety, in purchase flow we will attempt subaccount creation only if key present
           const subResp = await axios.post(
             "https://api.paystack.co/subaccount",
             {
@@ -235,7 +229,6 @@ export const checkoutRouter = createTRPCRouter({
             throw new Error("Failed to create Paystack subaccount for tenant.");
           }
 
-          // Persist and continue
           await ctx.db.update({
             collection: "tenants",
             id: tenant.id,
@@ -260,9 +253,8 @@ export const checkoutRouter = createTRPCRouter({
 
       try {
         const domain = generateTenantURL(input.tenantSlug);
-
         const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
-        // initialize Paystack transaction; subaccount is included so Paystack applies the percentage_charge set on that subaccount
+
         const initResponse = await axios.post(
           "https://api.paystack.co/transaction/initialize",
           {
@@ -307,7 +299,7 @@ export const checkoutRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await ctx.db.find({
         collection: "products",
-        depth: 2,
+        depth: 2, // ✅ Depth 2 is critical to reach Product -> images -> image (Media)
         where: {
           and: [{ id: { in: input.ids } }, { isArchived: { not_equals: true } }],
         },
@@ -323,7 +315,8 @@ export const checkoutRouter = createTRPCRouter({
         totalPrice,
         docs: data.docs.map((doc) => ({
           ...doc,
-          image: doc.image as Media | null,
+          // ✅ FIX: We no longer map 'image: doc.image', we pass the 'images' array
+          images: doc.images, 
           tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };

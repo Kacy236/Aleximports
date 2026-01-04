@@ -1,5 +1,4 @@
 import z from "zod";
-
 import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { Media, Tenant } from "@/payload-types";
 import { DEFAULT_LIMIT } from "@/constants";
@@ -26,26 +25,25 @@ export const libraryRouter = createTRPCRouter({
               user: { equals: ctx.session.user.id },
             },
             {
-              status: { equals: "success" }, // ✅ only successful orders
+              status: { equals: "success" },
             },
           ],
         },
       });
 
-      // ✅ flatten product arrays from all orders
       const order = ordersData.docs[0];
 
       if (!order) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Order not found",
+          message: "Order not found or you do not own this product",
         });
       }
-      
 
       const product = await ctx.db.findByID({
         collection: "products",
-          id: input.productId,
+        id: input.productId,
+        depth: 2, 
       });
 
       if (!product) {
@@ -55,21 +53,24 @@ export const libraryRouter = createTRPCRouter({
         });
       }
 
-      return product
+      return product;
     }),
 
-    getMany: protectedProcedure
+  getMany: protectedProcedure
     .input(
       z.object({
-        cursor: z.number().default(1),
+        cursor: z.number().nullish().default(1),
         limit: z.number().default(DEFAULT_LIMIT),
       }),
     )
     .query(async ({ ctx, input }) => {
+      // ✅ THE FIX: Ensure cursor is a number (fallback to 1) for Payload CMS
+      const pageNumber = input.cursor ?? 1;
+
       const ordersData = await ctx.db.find({
         collection: "orders",
-        depth: 0, // just raw IDs, no population
-        page: input.cursor,
+        depth: 0,
+        page: pageNumber, // 👈 Use the safe variable here
         limit: input.limit,
         where: {
           and: [
@@ -77,21 +78,19 @@ export const libraryRouter = createTRPCRouter({
               user: { equals: ctx.session.user.id },
             },
             {
-              status: { equals: "success" }, // ✅ only successful orders
+              status: { equals: "success" },
             },
           ],
         },
       });
 
-      // ✅ flatten product arrays from all orders
       const productIds = ordersData.docs.flatMap((order: any) => order.products || []);
-
-      // ✅ deduplicate (so same product doesn’t appear multiple times if bought twice)
       const uniqueProductIds = [...new Set(productIds)];
 
       const productsData = await ctx.db.find({
         collection: "products",
         pagination: false,
+        depth: 2, 
         where: {
           id: {
             in: uniqueProductIds,
@@ -122,15 +121,16 @@ export const libraryRouter = createTRPCRouter({
         })
       )
 
-
       return {
         totalDocs: productsData.totalDocs,
+        // ✅ Ensure nextPage is null (not undefined) for Tanstack Infinite Query
+        nextPage: ordersData.nextPage ?? null,
+        hasNextPage: ordersData.hasNextPage,
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
-          image: doc.image as Media | null,
-          tenant: doc.tenant as Tenant& { image: Media | null },
+          images: doc.images, 
+          tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };
     }),
-
 });

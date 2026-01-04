@@ -13,6 +13,7 @@ import { CheckoutItem } from "../components/checkout-item";
 import { CheckoutSidebar } from "../components/checkout-sidebar";
 import { useCheckoutStates } from "../../hooks/use-checkout-states";
 import { useRouter } from "next/navigation";
+import { Media } from "@/payload-types";
 
 interface CheckoutViewProps {
     tenantSlug: string;
@@ -39,6 +40,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
         onError: (error) => {
             if (error.data?.code === "UNAUTHORIZED") {
+                // Ensure this URL is correct for your production environment
                 window.location.href = "https://aleximportsshop.store/sign-in";
                 return;
             }
@@ -46,17 +48,14 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
     }));
 
-    // 💰 Calculation fix
     const totalAmount = useMemo(() => {
         return data?.docs.reduce((acc, product) => acc + (Number(product.price) || 0), 0) || 0;
     }, [data?.docs]);
 
-    // 📚 Library Sync fix
     useEffect(() => {
         if (states.success) {
             setStates({ success: false, cancel: false });
             clearCart();
-            // Force refresh library data so new products appear immediately
             queryClient.invalidateQueries(trpc.library.getMany.infiniteQueryFilter());
             router.push("/library");
         }
@@ -86,7 +85,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         );
     }
 
-    // Updated check: Ensure we have data and actual documents
     if (!data || !data.docs || data.docs.length === 0) {
         return (
             <div className="lg:pt-16 pt-4 px-4 lg:px-12">
@@ -104,19 +102,26 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
  
                 <div className="lg:col-span-4">
                     <div className="border rounded-md overflow-hidden bg-white">
-                        {data.docs.map((product, index) => (
-                            <CheckoutItem
-                              key={product.id}
-                              isLast={index === data.docs.length - 1}
-                              imageUrl={product.image?.url}
-                              name={product.name}
-                              productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
-                              tenantUrl={generateTenantURL(product.tenant.slug)}
-                              tenantName={product.tenant.name}
-                              price={product.price}
-                              onRemove={() => removeProduct(product.id)}
-                            />
-                        ))}
+                        {data.docs.map((product, index) => {
+                            // ✅ THE FIX: Extract the first image for the checkout item thumbnail
+                            const firstImageRow = product.images?.[0];
+                            const imageObject = firstImageRow?.image as Media | undefined;
+                            const imageUrl = imageObject?.url;
+
+                            return (
+                                <CheckoutItem
+                                  key={product.id}
+                                  isLast={index === data.docs.length - 1}
+                                  imageUrl={imageUrl} // Updated to use the first image from array
+                                  name={product.name}
+                                  productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
+                                  tenantUrl={generateTenantURL(product.tenant.slug)}
+                                  tenantName={product.tenant.name}
+                                  price={product.price}
+                                  onRemove={() => removeProduct(product.id)}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
 

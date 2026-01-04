@@ -18,13 +18,13 @@ export const productsRouter = createTRPCRouter({
         const product = await ctx.db.findByID({
           collection: "products",
           id: input.id,
-          depth: 2, // Load the "product.image", "product.tenant", and "product.tenant.image"
+          depth: 2, 
           select: {
             content: false,
           },
         });
 
-        if (product.isArchived) {
+        if (!product || product.isArchived) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Product not found",
@@ -57,7 +57,6 @@ export const productsRouter = createTRPCRouter({
           if (reviews.totalDocs > 0) {
             reviews.docs.forEach((review) => {
               const rating = review.rating;
-
               if (rating >=1 && rating <= 5) {
                 ratingDistribution[rating] = (ratingDistribution[rating] || 0) + 1;
               }
@@ -74,13 +73,18 @@ export const productsRouter = createTRPCRouter({
 
         return {
           ...product,
-          image: product.image as Media | null,
+          // ✅ Updated to map the array of images
+          images: product.images?.map((item: any) => ({
+            ...item,
+            image: item.image as Media
+          })) || [],
           tenant: product.tenant as Tenant & { image: Media | null },
           reviewRating,
           reviewCount: reviews.totalDocs,
           ratingDistribution,
         };
       }),
+
     getMany: baseProcedure
     .input(
       z.object({
@@ -135,10 +139,6 @@ export const productsRouter = createTRPCRouter({
           equals: input.tenantSlug,
         }
       } else {
-        // if we are loading products for public storefront (no tenantSlug)
-        // Make sure to not load products set to "isPrivate: true" (using reverse not_equals logic)
-        // These products are exclusively private to the tenant store
-
         where["isPrivate"] = {
           not_equals: true,
         }
@@ -147,7 +147,7 @@ export const productsRouter = createTRPCRouter({
       if (input.category) {
         const categoriesData = await ctx.db.find({
           limit: 1,
-          depth: 1, // Populate subcategories, subcategories.[0] will be a type of "Category"
+          depth: 1,
           collection: "categories",
           pagination: false,
           where: {
@@ -160,7 +160,6 @@ export const productsRouter = createTRPCRouter({
         const formattedData = categoriesData.docs.map((doc) => ({
           ...doc,
           subcategories: (doc.subcategories?.docs ?? []).map((doc) => ({
-              // Because of "depth: 1" we are confident "doc" will be a type of Category
               ...(doc as Category),
               subcategories: undefined,
           }))
@@ -194,7 +193,7 @@ export const productsRouter = createTRPCRouter({
 
         const data = await ctx.db.find({
             collection: 'products',
-            depth: 2, // Populate "category" & "image", "tenant" & "tenant.image"
+            depth: 2, 
             where,
             sort,
             page: input.cursor,
@@ -231,7 +230,11 @@ export const productsRouter = createTRPCRouter({
           ...data,
           docs: dataWithSummarizedReviews.map((doc) => ({
             ...doc,
-            image: doc.image as Media | null,
+            // ✅ Updated to map the array of images for the list view
+            images: doc.images?.map((item: any) => ({
+                ...item,
+                image: item.image as Media
+            })) || [],
             tenant: doc.tenant as Tenant & { image: Media | null },
           }))
         }
