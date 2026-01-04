@@ -6,20 +6,18 @@ import dynamic from "next/dynamic";
 import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment } from "react";
 import { Progress } from "@/components/ui/progress";
+import { Media, Tenant } from "@/payload-types";
 
 const CartButton = dynamic(
-    () => import("../components/cart-button").then(
-        (mod) => mod.CartButton,
-    ),
+    () => import("../components/cart-button").then((mod) => mod.CartButton),
     {
         ssr: false,
         loading: () => <Button disabled className="flex-1 bg-green-500">Add to Cart</Button>
@@ -36,19 +34,34 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
     const [isCopied, setIsCopied] = useState(false);
-    
-    // --- MULTIPLE IMAGES STATE ---
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-    const images = data.images || [];
-    const currentDisplayImage = images[selectedImageIndex]?.image?.url || "/placeholder.png";
+
+    // ✅ FIX: Defensive Image Extraction
+    const images = useMemo(() => data?.images || [], [data?.images]);
+    
+    const currentDisplayImage = useMemo(() => {
+        const imgObj = images[selectedImageIndex]?.image;
+        if (imgObj && typeof imgObj === "object" && "url" in imgObj && imgObj.url) {
+            return imgObj.url;
+        }
+        return "/placeholder.png";
+    }, [images, selectedImageIndex]);
+
+    // ✅ FIX: Defensive Tenant Handling
+    const tenant = data?.tenant as Tenant | undefined;
+    const tenantImage = tenant?.image as Media | undefined;
 
     const nextImage = () => {
+        if (images.length === 0) return;
         setSelectedImageIndex((prev) => (prev + 1) % images.length);
     };
 
     const prevImage = () => {
+        if (images.length === 0) return;
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     };
+
+    if (!data) return null;
 
     return (
         <div className="px-4 lg:px-12 py-10">
@@ -57,13 +70,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
                     <Image
                         src={currentDisplayImage}
-                        alt={data.name}
+                        alt={data.name || "Product Image"}
                         fill
                         className="object-contain"
                         priority
                     />
 
-                    {/* Arrow Navigation */}
                     {images.length > 1 && (
                         <>
                             <button 
@@ -89,7 +101,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 <ChevronRight className="size-6 transition-colors" />
                             </button>
                             
-                            {/* Centered Image Counter */}
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
@@ -111,17 +122,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
                             <div className="px-6 py-4 flex items-center justify-center lg:border-r">
                                 <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
-                                    {data.tenant.image?.url && (
+                                    {tenantImage?.url && (
                                         <Image 
-                                          src={data.tenant.image.url}
-                                          alt={data.tenant.name}
+                                          src={tenantImage.url}
+                                          alt={tenant?.name || "Tenant"}
                                           width={20}
                                           height={20}
                                           className="rounded-full border shrink-0 size-[20px]"
                                         />
                                     )}
                                     <p className="text-base underline font-medium">
-                                      {data.tenant.name}  
+                                      {tenant?.name || "Store"}  
                                     </p>
                                 </Link>
                             </div>
@@ -129,11 +140,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <div className="hidden lg:flex px-6 py-4 items-center justify-center">
                                 <div className="flex items-center gap-2">
                                     <StarRating
-                                      rating={data.reviewRating}
+                                      rating={data.reviewRating ?? 0}
                                       iconClassName="size-4"
                                     />
                                     <p className="text-base font-medium">
-                                        {data.reviewCount} ratings
+                                        {data.reviewCount ?? 0} ratings
                                     </p>
                                 </div>
                             </div>
@@ -165,10 +176,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                           setIsCopied(true);
                                           navigator.clipboard.writeText(window.location.href);
                                           toast.success("URL copied to clipboard")
-
-                                          setTimeout(() => {
-                                              setIsCopied(false);
-                                          }, 1000);
+                                          setTimeout(() => setIsCopied(false), 1000);
                                       }}
                                       disabled={isCopied}
                                     >
@@ -189,8 +197,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     <h3 className="text-xl font-medium">Ratings</h3>
                                     <div className="flex items-center gap-x-1 font-medium">
                                         <StarIcon className="size-4 fill-black" />
-                                        <p>({data.reviewRating.toFixed(1)})</p>
-                                        <p className="text-base">{data.reviewCount} ratings</p>
+                                        <p>({(data.reviewRating ?? 0).toFixed(1)})</p>
+                                        <p className="text-base">{data.reviewCount ?? 0} ratings</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4">
@@ -198,6 +206,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     <Fragment key={stars}>
                                         <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
                                         <Progress 
+                                          // ✅ FIX: Optional chaining on distribution object
                                           value={data.ratingDistribution?.[stars] ?? 0}
                                           className="h-[1lh]"
                                         />
