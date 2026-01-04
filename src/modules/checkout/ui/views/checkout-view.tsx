@@ -3,16 +3,15 @@
 import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { InboxIcon, LoaderIcon } from "lucide-react";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 import { useCart } from "../../hooks/use-cart";
 import { generateTenantURL } from "@/lib/utils";
 import { CheckoutItem } from "../components/checkout-item";
 import { CheckoutSidebar } from "../components/checkout-sidebar";
 import { useCheckoutStates } from "../../hooks/use-checkout-states";
-import { useRouter } from "next/navigation";
 import { Media } from "@/payload-types";
 
 interface CheckoutViewProps {
@@ -22,7 +21,9 @@ interface CheckoutViewProps {
 export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     const router = useRouter();
     const [states, setStates] = useCheckoutStates();
-    const { productIds, removeProduct, clearCart } = useCart(tenantSlug);
+    
+    // ✅ Use 'items' and 'updateQuantity' from your updated hook
+    const { items, productIds, removeProduct, updateQuantity, clearCart } = useCart(tenantSlug);
 
     const trpc = useTRPC();
     const queryClient = useQueryClient();
@@ -40,7 +41,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
         onError: (error) => {
             if (error.data?.code === "UNAUTHORIZED") {
-                // Ensure this URL is correct for your production environment
                 window.location.href = "https://aleximportsshop.store/sign-in";
                 return;
             }
@@ -48,9 +48,14 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         },
     }));
 
+    // ✅ Updated to calculate total based on Quantity
     const totalAmount = useMemo(() => {
-        return data?.docs.reduce((acc, product) => acc + (Number(product.price) || 0), 0) || 0;
-    }, [data?.docs]);
+        return data?.docs.reduce((acc, product) => {
+            const cartItem = items.find((item) => item.id === product.id);
+            const quantity = cartItem?.quantity || 1;
+            return acc + (Number(product.price) * quantity || 0);
+        }, 0) || 0;
+    }, [data?.docs, items]);
 
     useEffect(() => {
         if (states.success) {
@@ -59,14 +64,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
             queryClient.invalidateQueries(trpc.library.getMany.infiniteQueryFilter());
             router.push("/library");
         }
-    }, [
-        states.success, 
-        clearCart, 
-        router, 
-        setStates,
-        queryClient,
-        trpc.library.getMany,
-    ]);
+    }, [states.success, clearCart, router, setStates, queryClient, trpc.library.getMany]);
 
     useEffect(() => {
         if (error?.data?.code === "NOT_FOUND") {
@@ -99,26 +97,30 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     return (
         <div className="lg:pt-16 pt-4 px-4 lg:px-12">
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 lg:gap-16">
- 
                 <div className="lg:col-span-4">
                     <div className="border rounded-md overflow-hidden bg-white">
                         {data.docs.map((product, index) => {
-                            // ✅ THE FIX: Extract the first image for the checkout item thumbnail
                             const firstImageRow = product.images?.[0];
                             const imageObject = firstImageRow?.image as Media | undefined;
                             const imageUrl = imageObject?.url;
+
+                            // ✅ Find specific quantity for this product
+                            const quantity = items.find(i => i.id === product.id)?.quantity || 1;
 
                             return (
                                 <CheckoutItem
                                   key={product.id}
                                   isLast={index === data.docs.length - 1}
-                                  imageUrl={imageUrl} // Updated to use the first image from array
+                                  imageUrl={imageUrl}
                                   name={product.name}
                                   productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
                                   tenantUrl={generateTenantURL(product.tenant.slug)}
                                   tenantName={product.tenant.name}
                                   price={product.price}
+                                  quantity={quantity} // ✅ Pass current quantity
                                   onRemove={() => removeProduct(product.id)}
+                                  onIncrease={() => updateQuantity(product.id, quantity + 1)} // ✅ Handler for +
+                                  onDecrease={() => updateQuantity(product.id, quantity - 1)} // ✅ Handler for -
                                 />
                             );
                         })}
@@ -128,12 +130,15 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 <div className="lg:col-span-3">
                     <CheckoutSidebar
                       total={totalAmount} 
-                      onPurchase={() => purchase.mutate({ tenantSlug, productIds })}
+                      // ✅ Passing items (ids + quantities) to purchase mutation
+                      onPurchase={() => purchase.mutate({ 
+                        tenantSlug, 
+                        items: items.map(i => ({ id: i.id, quantity: i.quantity })) 
+                      })}
                       isCanceled={states.cancel}
                       disabled={purchase.isPending}
                     />
                 </div>
-                
             </div>
         </div>
     );

@@ -1,50 +1,47 @@
 import { useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
-
 import { useCartStore } from "../store/use-cart-store";
 
 export const useCart = (tenantSlug: string) => {
-    const getCartByTenant = useCartStore((state) => state.getCartByTenant);
+    // Select the whole cart object safely
+    const cart = useCartStore(useShallow((state) => 
+        state.tenantCarts[tenantSlug] || { items: [] }
+    ));
+    
     const addProduct = useCartStore((state) => state.addProduct);
     const removeProduct = useCartStore((state) => state.removeProduct);
+    const setQuantity = useCartStore((state) => state.setQuantity);
     const clearCart = useCartStore((state) => state.clearCart);
-    const clearAllCarts = useCartStore((state) => state.clearAllCarts);
 
-    const productIds = useCartStore(useShallow((state) => state.tenantCarts[tenantSlug]?.
-    productIds || []));
+    const items = cart.items;
+    const productIds = items.map(item => item.id);
+
+    const updateQuantity = useCallback((productId: string, quantity: number) => {
+        setQuantity(tenantSlug, productId, quantity);
+    }, [tenantSlug, setQuantity]);
 
     const toggleProduct = useCallback((productId: string) => {
-        if (productIds.includes(productId)) {
+        const exists = items.some(i => i.id === productId);
+        if (exists) {
             removeProduct(tenantSlug, productId);
         } else {
             addProduct(tenantSlug, productId);
         }
-    }, [addProduct, removeProduct, productIds, tenantSlug]);
+    }, [addProduct, removeProduct, items, tenantSlug]);
 
     const isProductInCart = useCallback((productId: string) => {
-        return productIds.includes(productId);
-    }, [productIds]);
-
-    const clearTenantCart = useCallback(() => {
-        clearCart(tenantSlug);
-    }, [tenantSlug, clearCart]);
-
-    const handleAddProduct = useCallback((productId: string) => {
-        addProduct(tenantSlug, productId);
-    }, [addProduct, tenantSlug]);
-
-    const handleRemoveProduct = useCallback((productId: string) => {
-        removeProduct(tenantSlug, productId);
-    }, [removeProduct, tenantSlug]);
+        return items.some(i => i.id === productId);
+    }, [items]);
 
     return {
+        items, // Array of { id, quantity }
         productIds,
-        addProduct: handleAddProduct,
-        removeProduct: handleRemoveProduct,
-        clearCart: clearTenantCart,
-        clearAllCarts,
-        toggleProduct,
+        addProduct: (id: string) => addProduct(tenantSlug, id),
+        removeProduct: (id: string) => removeProduct(tenantSlug, id),
+        updateQuantity,
+        clearCart: () => clearCart(tenantSlug),
         isProductInCart,
-        totalItems: productIds.length,
+        toggleProduct,
+        totalItems: items.reduce((acc, item) => acc + item.quantity, 0),
     };
 };

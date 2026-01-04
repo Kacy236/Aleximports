@@ -8,13 +8,8 @@ import { generateTenantURL } from "@/lib/utils";
 
 /**
  * Checkout router
- *
- * Option A: Backend automatically creates a real Paystack subaccount
- * in both test and live modes (using the appropriate sk_test_ / sk_live_
- * key that you set in PAYSTACK_SECRET_KEY).
- *
- * For test mode we skip bank/resolve and directly call the subaccount create
- * endpoint (Paystack accepts test-subaccount creation with sk_test_ keys).
+ * * Option A: Backend automatically creates a real Paystack subaccount
+ * in both test and live modes.
  */
 
 export const checkoutRouter = createTRPCRouter({
@@ -60,7 +55,6 @@ export const checkoutRouter = createTRPCRouter({
     // If tenant already has a subaccount code, return success (idempotent)
     if (tenant.paystackSubaccountCode) {
       console.log("Tenant already has subaccount:", tenant.paystackSubaccountCode);
-      // ensure we store the platformFeePercentage on tenant
       await ctx.db.update({
         collection: "tenants",
         id: tenant.id,
@@ -76,7 +70,7 @@ export const checkoutRouter = createTRPCRouter({
     try {
       let accountName = tenant.accountName ?? `${tenant.name}`;
 
-      // If live mode: verify bank details first (safer)
+      // If live mode: verify bank details first
       if (!isTestMode) {
         try {
           const verifyResponse = await axios.get(
@@ -92,21 +86,19 @@ export const checkoutRouter = createTRPCRouter({
           console.error("Bank resolve failed:", err?.response?.data || err.message || err);
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message:
-              "Unable to verify bank details with Paystack. Please confirm bank code and account number.",
+            message: "Unable to verify bank details with Paystack. Please confirm bank code and account number.",
           });
         }
       } else {
-        // Test mode: don't rely on bank/resolve (may not be supported). Keep accountName as tenant.name (or tenant.accountName if set).
         console.log("Test mode: skipping bank/resolve and proceeding to create test subaccount on Paystack.");
       }
 
-      // Create Paystack subaccount (works in test or live depending on key)
+      // Create Paystack subaccount
       const subaccountPayload: Record<string, any> = {
         business_name: tenant.name,
         settlement_bank: tenant.bankCode,
         account_number: tenant.accountNumber,
-        percentage_charge: platformFeePercentage, // platform takes this percentage
+        percentage_charge: platformFeePercentage,
         primary_contact_email: user.email ?? undefined,
         metadata: { tenantId: tenant.id },
       };
@@ -155,31 +147,36 @@ export const checkoutRouter = createTRPCRouter({
   }),
 
   /**
-   * PURCHASE: initialize Paystack transaction (tenant subaccount receives funds;
-   * platform percentage is applied via the subaccount's percentage_charge)
+   * PURCHASE: initialize Paystack transaction
    */
   purchase: protectedProcedure
     .input(
       z.object({
-        productIds: z.array(z.string()).min(1),
+        // ✅ FIX: Accepts items array with quantity
+        items: z.array(z.object({
+          id: z.string(),
+          quantity: z.number().min(1)
+        })).min(1),
         tenantSlug: z.string().min(1),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const productIds = input.items.map(i => i.id);
+
       // Fetch products scoped to tenant slug
       const products = await ctx.db.find({
         collection: "products",
-        depth: 1, // Depth 1 is enough for IDs and names used in metadata
+        depth: 1, 
         where: {
           and: [
-            { id: { in: input.productIds } },
+            { id: { in: productIds } },
             { "tenant.slug": { equals: input.tenantSlug } },
             { isArchived: { not_equals: true } },
           ],
         },
       });
 
-      if (products.totalDocs !== input.productIds.length)
+      if (products.totalDocs !== productIds.length)
         throw new TRPCError({ code: "NOT_FOUND", message: "Products not found" });
 
       // Fetch tenant
@@ -240,15 +237,19 @@ export const checkoutRouter = createTRPCRouter({
           console.error("Failed to auto-create subaccount during purchase:", err?.response?.data || err);
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message:
-              err?.response?.data?.message ||
-              "Tenant subaccount missing and automatic creation failed. Ask the tenant to verify their account.",
+            message: err?.response?.data?.message || "Tenant subaccount missing and automatic creation failed.",
           });
         }
       }
 
-      const totalAmount =
-        products.docs.reduce((acc, p) => acc + (isNaN(Number(p.price)) ? 0 : Number(p.price)), 0) * 100;
+      // ✅ FIX: Calculate total using products multiplied by user quantity
+      const totalAmount = products.docs.reduce((acc, p) => {
+        const cartItem = input.items.find(i => i.id === p.id);
+        const qty = cartItem?.quantity || 1;
+        const price = isNaN(Number(p.price)) ? 0 : Number(p.price);
+        return acc + (price * qty);
+      }, 0) * 100;
+
       if (totalAmount <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid amount" });
 
       try {
@@ -259,13 +260,17 @@ export const checkoutRouter = createTRPCRouter({
           "https://api.paystack.co/transaction/initialize",
           {
             email: ctx.session.user.email,
-            amount: totalAmount,
+            amount: Math.round(totalAmount),
             subaccount: tenant.paystackSubaccountCode,
             callback_url: `${domain}/checkout?success=true`,
             metadata: {
               userId: ctx.session.user.id,
-              products: products.docs.map((p) => ({ id: p.id, name: p.name, price: p.price })) as ProductMetadata[],
               tenantId: tenant.id,
+              // ✅ Pass detailed product metadata with quantities
+              products: products.docs.map((p) => {
+                 const qty = input.items.find(i => i.id === p.id)?.quantity || 1;
+                 return { id: p.id, name: p.name, price: p.price, quantity: qty };
+              }),
             } as CheckoutMetadata,
             currency: "NGN",
           },
@@ -299,7 +304,7 @@ export const checkoutRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const data = await ctx.db.find({
         collection: "products",
-        depth: 2, // ✅ Depth 2 is critical to reach Product -> images -> image (Media)
+        depth: 2, 
         where: {
           and: [{ id: { in: input.ids } }, { isArchived: { not_equals: true } }],
         },
@@ -315,7 +320,6 @@ export const checkoutRouter = createTRPCRouter({
         totalPrice,
         docs: data.docs.map((doc) => ({
           ...doc,
-          // ✅ FIX: We no longer map 'image: doc.image', we pass the 'images' array
           images: doc.images, 
           tenant: doc.tenant as Tenant & { image: Media | null },
         })),
