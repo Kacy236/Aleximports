@@ -42,16 +42,17 @@ export const Products: CollectionConfig = {
   },
 
   admin: {
-    useAsTitle: "product name",
+    useAsTitle: "name",
     description:
       "You must complete your Paystack verification (subaccount) before creating products.",
   },
 
   fields: [
     {
-      name: "product name",
+      name: "name",
       type: "text",
       required: true,
+      label: "product name"
     },
     {
       name: "description",
