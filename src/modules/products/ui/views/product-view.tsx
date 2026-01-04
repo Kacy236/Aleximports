@@ -3,7 +3,6 @@
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-// ✅ Added Chevron icons
 import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -43,7 +42,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const images = data.images || [];
     const currentDisplayImage = images[selectedImageIndex]?.image?.url || "/placeholder.png";
 
-    // ✅ Handlers for Arrow Navigation
     const nextImage = () => {
         setSelectedImageIndex((prev) => (prev + 1) % images.length);
     };
@@ -65,54 +63,33 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         priority
                     />
 
-                    {/* ✅ Arrow Navigation UI */}
+                    {/* Arrow Navigation */}
                     {images.length > 1 && (
                         <>
                             <button 
                                 onClick={prevImage}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
                                 aria-label="Previous image"
                             >
-                                <ChevronLeft className="size-6" />
+                                <ChevronLeft className="size-6 text-black" />
                             </button>
                             <button 
                                 onClick={nextImage}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 z-10"
                                 aria-label="Next image"
                             >
-                                <ChevronRight className="size-6" />
+                                <ChevronRight className="size-6 text-black" />
                             </button>
                             
-                            {/* Optional: Image Counter Overlay */}
-                            <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
+                            {/* Centered Image Counter */}
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
                         </>
                     )}
                 </div>
 
-                {/* --- THUMBNAIL STRIP --- */}
-                {images.length > 1 && (
-                    <div className="flex gap-2 p-4 overflow-x-auto border-b bg-gray-50/50">
-                        {images.map((item, index) => (
-                            <button
-                                key={item.id || index}
-                                onClick={() => setSelectedImageIndex(index)}
-                                className={cn(
-                                    "relative size-20 shrink-0 rounded-md overflow-hidden border-2 transition",
-                                    selectedImageIndex === index ? "border-green-500 shadow-sm" : "border-transparent opacity-70 hover:opacity-100"
-                                )}
-                            >
-                                <Image
-                                    src={item.image?.url || "/placeholder.png"}
-                                    alt={`${data.name} thumbnail ${index + 1}`}
-                                    fill
-                                    className="object-cover"
-                                />
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {/* --- THUMBNAIL STRIP REMOVED --- */}
 
                 <div className="grid grid-cols-1 lg:grid-cols-6">
                     <div className="col-span-4">
