@@ -36,10 +36,15 @@ export const Products: CollectionConfig = {
       return Boolean(tenant?.paystackSubaccountCode);
     },
     delete: ({ req }) => isSuperAdmin(req.user),
+    // Added read access to ensure users can see the products they have access to
+    read: () => true, 
   },
 
   admin: {
     useAsTitle: "name",
+    // ✅ CRITICAL FIX: Explicitly define columns to exclude the 'images' array.
+    // This stops the Admin UI from crashing when it hits old single-image data.
+    defaultColumns: ["name", "price", "category", "updatedAt"],
     description:
       "You must complete your Paystack verification (subaccount) before creating products.",
   },
@@ -88,7 +93,6 @@ export const Products: CollectionConfig = {
       relationTo: "tags",
       hasMany: true,
     },
-    // --- MULTIPLE IMAGES FIX START ---
     {
       name: "images",
       label: "Product Images",
@@ -106,7 +110,6 @@ export const Products: CollectionConfig = {
         },
       ],
     },
-    // --- MULTIPLE IMAGES FIX END ---
     {
       name: "refundPolicy",
       type: "select",
