@@ -12,17 +12,15 @@ interface Props {
 };
 
 export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
-    // 1. Add mounting state to prevent Hydration Error
     const [isMounted, setIsMounted] = useState(false);
     
-    // 2. Access the new store structure
-    const cart = useCart(); 
+    // ✅ FIX: Pass the tenantSlug to the hook
+    const cart = useCart(tenantSlug); 
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // While the server is rendering, or before the client is ready, show a placeholder
     if (!isMounted) {
         return (
             <Button variant="elevated" className="flex-1 bg-green-500 opacity-50" disabled>
@@ -43,14 +41,15 @@ export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
         );
     }
 
-    // ✅ CHECK: Use the updated 'items' array from our new Zustand store
+    // ✅ Match the new store properties (items, addItem, removeItem)
+    // If your store still uses 'products' instead of 'items', change this to cart.products
     const isInCart = cart.items.some(item => item.id === productId);
 
     const handleCartAction = () => {
         if (isInCart) {
             cart.removeItem(productId);
         } else {
-            // We default to 1 when adding from the Product View
+            // Adding 1 unit by default from the product page
             cart.addItem({ id: productId, quantity: 1 });
         }
     };
@@ -58,7 +57,10 @@ export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
     return (
         <Button
           variant="elevated"
-          className={cn("flex-1 bg-green-500", isInCart && "bg-white text-black border")}
+          className={cn(
+            "flex-1 bg-green-500 hover:bg-green-600 transition-colors", 
+            isInCart && "bg-white text-black border border-neutral-200"
+          )}
           onClick={handleCartAction}
         >
           {isInCart ? "Remove from cart" : "Add to cart"}
