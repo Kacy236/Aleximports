@@ -74,34 +74,38 @@ export const SearchInput = ({
     <div className="flex flex-col lg:flex-row items-center gap-3 w-full max-w-6xl mx-auto p-1">
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-      {/* PRODUCT SEARCH */}
-      <div className="relative flex-1 w-full">
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black z-10" />
-        <Input
+      {/* SEARCH + FILTER GROUP: Side-by-side on mobile, integrated on desktop */}
+      <div className="flex flex-row items-center gap-2 w-full flex-1">
+        {/* PRODUCT SEARCH */}
+        <div className="relative flex-1">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black z-10" />
+          <Input
+            className={cn(
+              "pl-10 h-14 w-full bg-white rounded-xl text-black font-bold placeholder:text-neutral-500 focus-visible:ring-0",
+              boldBorderStyle
+            )}
+            placeholder={placeholder}
+            disabled={disabled}
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+          />
+        </div>
+
+        {/* MOBILE FILTER BUTTON: Appears beside search on mobile only */}
+        <Button
+          variant="outline"
+          type="button"
           className={cn(
-            "pl-10 h-14 w-full bg-white rounded-xl text-black font-bold placeholder:text-neutral-500 focus-visible:ring-0",
+            "size-14 shrink-0 lg:hidden rounded-xl bg-green-400 hover:bg-green-500",
             boldBorderStyle
           )}
-          placeholder={placeholder}
-          disabled={disabled}
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-        />
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          <ListFilterIcon className="size-6 text-black" />
+        </Button>
       </div>
 
-      {/* MOBILE FILTER BUTTON */}
-      <Button
-        variant="outline"
-        className={cn(
-          "size-14 shrink-0 lg:hidden rounded-xl bg-green-400 hover:bg-green-500",
-          boldBorderStyle
-        )}
-        onClick={() => setIsSidebarOpen(true)}
-      >
-        <ListFilterIcon className="size-6 text-black" />
-      </Button>
-
-      {/* STORE SELECTOR + LIBRARY */}
+      {/* STORE SELECTOR + LIBRARY GROUP */}
       <div className="flex items-center gap-3 w-full lg:w-auto">
         <DropdownMenu
           onOpenChange={(open) => {
@@ -128,7 +132,6 @@ export const SearchInput = ({
             </Button>
           </DropdownMenuTrigger>
 
-          {/* 🔥 FIXED DROPDOWN */}
           <DropdownMenuContent
             side="bottom"
             align="end"
