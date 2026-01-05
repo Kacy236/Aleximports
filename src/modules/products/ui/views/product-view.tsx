@@ -68,8 +68,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     };
 
     // --- RENDER GUARD ---
-    // If not mounted, show the skeleton. This stops the "Client-side exception"
-    // caused by the server trying to render store-dependent UI.
     if (!isMounted) {
         return <ProductViewSkeleton />;
     }
@@ -94,24 +92,26 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <button 
                                 onClick={prevImage}
                                 className={cn(
-                                    "absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 opacity-0 group-hover:opacity-100 focus:opacity-100",
+                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
+                                    "bg-white/90 border border-neutral-200", 
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
                                     "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Previous image"
                             >
-                                <ChevronLeft className="size-6 transition-colors" />
+                                <ChevronLeft className="size-5 sm:size-6 transition-colors" />
                             </button>
                             <button 
                                 onClick={nextImage}
                                 className={cn(
-                                    "absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 opacity-0 group-hover:opacity-100 focus:opacity-100",
+                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
+                                    "bg-white/90 border border-neutral-200",
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
                                     "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Next image"
                             >
-                                <ChevronRight className="size-6 transition-colors" />
+                                <ChevronRight className="size-5 sm:size-6 transition-colors" />
                             </button>
                             
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
@@ -130,14 +130,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <div className="px-6 py-4 flex items-center justify-center border-r">
                                 <div className="px-2 py-1 border bg-green-500 w-fit">
                                     <p className="text-base font-medium">
-                                        {/* Added Number() cast to prevent currency formatting crashes */}
                                         {formatCurrency(Number(data.price || 0))}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="px-6 py-4 flex items-center justify-center lg:border-r">
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
+                                <Link 
+                                    href={generateTenantURL(tenantSlug)} 
+                                    className="flex items-center gap-2 group/tenant"
+                                >
                                     {tenantImage?.url && (
                                         <Image 
                                           src={tenantImage.url}
@@ -147,7 +149,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                           className="rounded-full border shrink-0 size-[20px]"
                                         />
                                     )}
-                                    <p className="text-base underline font-medium">
+                                    {/* Underlined Tenant Name */}
+                                    <p className="text-base font-medium underline underline-offset-4 decoration-1 transition-colors hover:text-green-500">
                                       {tenant?.name || "Store"}  
                                     </p>
                                 </Link>
