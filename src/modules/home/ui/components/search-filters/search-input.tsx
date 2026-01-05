@@ -61,24 +61,7 @@ export const SearchInput = ({
                     />
                 </div>
 
-                {/* Tenant / Store Selector */}
-                <div className="relative min-w-[140px] hidden md:block">
-                    <StoreIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-500 pointer-events-none" />
-                    <select
-                        disabled={disabled}
-                        value={tenantValue || ""}
-                        onChange={(e) => onTenantChange?.(e.target.value)}
-                        className={cn(
-                            "w-full h-12 pl-9 pr-4 text-sm bg-white border border-input rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-green-500",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <option value="">All Stores</option>
-                        {tenants?.map((t) => (
-                            <option key={t.id} value={t.slug}>{t.name}</option>
-                        ))}
-                    </select>
-                </div>
+               
 
                 <Button
                     variant="elevated"
