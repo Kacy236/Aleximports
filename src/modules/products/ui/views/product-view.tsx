@@ -93,8 +93,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 onClick={prevImage}
                                 className={cn(
                                     "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200", 
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
+                                    "bg-white/90 border border-neutral-200", // Background/Border visible on mobile
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100", // Hidden only on large screens until hover
                                     "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Previous image"
@@ -105,8 +105,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 onClick={nextImage}
                                 className={cn(
                                     "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200",
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
+                                    "bg-white/90 border border-neutral-200", // Background/Border visible on mobile
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100", // Hidden only on large screens until hover
                                     "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Next image"
@@ -136,10 +136,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
 
                             <div className="px-6 py-4 flex items-center justify-center lg:border-r">
-                                <Link 
-                                    href={generateTenantURL(tenantSlug)} 
-                                    className="flex items-center gap-2 group/tenant"
-                                >
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
                                     {tenantImage?.url && (
                                         <Image 
                                           src={tenantImage.url}
@@ -149,8 +146,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                           className="rounded-full border shrink-0 size-[20px]"
                                         />
                                     )}
-                                    {/* Underlined Tenant Name */}
-                                    <p className="text-base font-medium underline underline-offset-4 decoration-1 transition-colors hover:text-green-500">
+                                    <p className="text-base underline font-medium">
                                       {tenant?.name || "Store"}  
                                     </p>
                                 </Link>
