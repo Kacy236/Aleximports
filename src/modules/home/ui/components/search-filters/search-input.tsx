@@ -52,7 +52,6 @@ export const SearchInput = ({
 
   const activeTenantLabel = tenants?.find(t => t.slug === tenantValue)?.name || "All Stores";
 
-  // Filter stores based on the store search input
   const filteredTenants = useMemo(() => {
     if (!storeSearch) return tenants;
     return tenants?.filter((t) => 
@@ -67,19 +66,20 @@ export const SearchInput = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue, onChange]);
 
-  const boldBorderStyle = "border-[2.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]";
+  // Enhanced Bold Neo-Brutalism Style
+  const boldBorderStyle = "border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]";
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto p-1">
+    <div className="flex flex-col gap-5 w-full max-w-2xl mx-auto p-1">
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-      {/* Row 1: Product Search + Filter */}
-      <div className="flex items-center gap-3 w-full group">
+      {/* Row 1: Product Search + Filter (Larger Height) */}
+      <div className="flex items-center gap-3 w-full">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black z-10" />
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-black z-10" />
           <Input
             className={cn(
-              "pl-10 h-14 w-full bg-white rounded-xl text-black font-bold placeholder:text-neutral-500 transition-all focus-visible:ring-0",
+              "pl-12 h-16 w-full bg-white rounded-2xl text-black font-black placeholder:text-neutral-500 transition-all focus-visible:ring-0 uppercase tracking-tighter",
               boldBorderStyle
             )}
             placeholder={placeholder}
@@ -92,103 +92,112 @@ export const SearchInput = ({
         <Button
           variant="outline"
           className={cn(
-            "size-14 shrink-0 lg:hidden rounded-xl bg-green-400 hover:bg-green-500 transition-all",
+            "size-16 shrink-0 lg:hidden rounded-2xl bg-green-400 hover:bg-green-500 transition-all",
             boldBorderStyle
           )}
           onClick={() => setIsSidebarOpen(true)}
         >
-          <ListFilterIcon className="size-6 text-black" />
+          <ListFilterIcon className="size-7 text-black" />
         </Button>
       </div>
 
-      {/* Row 2: Store Search (Dropdown) + Library */}
+      {/* Row 2: Maximum Length Store Selector + Library */}
       <div className="flex items-center gap-3 w-full">
         <DropdownMenu onOpenChange={(open) => !open && setStoreSearch("")}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               className={cn(
-                "flex-[1.5] h-14 justify-between px-4 rounded-xl transition-all bg-white hover:bg-neutral-50",
+                "flex-[3] h-16 justify-between px-5 rounded-2xl transition-all bg-white hover:bg-neutral-50",
                 boldBorderStyle,
                 tenantValue ? "bg-green-50" : "text-black"
               )}
             >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <StoreIcon className="size-4 shrink-0 text-black" />
-                <span className="truncate font-black text-xs sm:text-sm uppercase tracking-tight">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <StoreIcon className="size-5 shrink-0 text-black" />
+                <span className="truncate font-black text-sm sm:text-base uppercase tracking-tight">
                   {activeTenantLabel}
                 </span>
               </div>
-              <ChevronDownIcon className="size-4 text-black shrink-0 ml-2" />
+              <ChevronDownIcon className="size-5 text-black shrink-0 ml-2" />
             </Button>
           </DropdownMenuTrigger>
           
           <DropdownMenuContent 
             align="start" 
-            className="w-[280px] rounded-xl p-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white"
+            sideOffset={8}
+            // Use Viewport width minus padding for maximum length on mobile
+            className="w-[calc(100vw-2rem)] sm:w-[450px] rounded-2xl p-4 border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white z-[100]"
           >
-            {/* Inline Store Search Input */}
-            <div className="relative mb-2">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-black/50" />
+            {/* Extended Search Input inside Dropdown */}
+            <div className="relative mb-4">
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-black" />
               <input
                 autoFocus
-                placeholder="Find a store..."
+                placeholder="SEARCH FOR A STORE..."
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-lg border-2 border-black text-sm font-bold focus:outline-none focus:bg-green-50 placeholder:text-black/40"
+                className="w-full h-14 pl-12 pr-12 rounded-xl border-[3px] border-black text-base font-black focus:outline-none focus:bg-green-100 placeholder:text-black/30 uppercase tracking-tighter transition-colors"
               />
               {storeSearch && (
                 <button 
                   onClick={() => setStoreSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 bg-black rounded-full hover:bg-red-500 transition-colors"
                 >
-                  <XIcon className="size-3 text-black" />
+                  <XIcon className="size-3.5 text-white stroke-[4px]" />
                 </button>
               )}
             </div>
 
-            <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+            {/* Increased list length for better visibility */}
+            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               <DropdownMenuItem 
                 onClick={() => onTenantChange?.(undefined)}
-                className="rounded-lg py-3 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
+                className="rounded-xl py-4 px-4 font-black cursor-pointer focus:bg-green-400 focus:text-black uppercase text-sm mb-2 border-2 border-transparent focus:border-black transition-all"
               >
-                ALL STORES
+                🌍 ALL STORES
               </DropdownMenuItem>
               
-              <div className="h-[2px] bg-black my-1" />
+              <div className="h-[3px] bg-black my-3 rounded-full" />
               
               {filteredTenants?.length === 0 ? (
-                <div className="p-3 text-center text-xs font-bold text-black/50 uppercase">
-                  No stores found
+                <div className="p-10 text-center text-sm font-black text-black/40 uppercase bg-neutral-50 rounded-xl border-[3px] border-dashed border-neutral-300">
+                  Store not found
                 </div>
               ) : (
-                filteredTenants?.map((tenant) => (
-                  <DropdownMenuItem
-                    key={tenant.id}
-                    onClick={() => onTenantChange?.(tenant.slug)}
-                    className="flex items-center justify-between rounded-lg py-3 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
-                  >
-                    <span className="truncate mr-2">{tenant.name}</span>
-                    {tenantValue === tenant.slug && <CheckIcon className="size-4 stroke-[3px] shrink-0" />}
-                  </DropdownMenuItem>
-                ))
+                <div className="flex flex-col gap-1">
+                  {filteredTenants?.map((tenant) => (
+                    <DropdownMenuItem
+                      key={tenant.id}
+                      onClick={() => onTenantChange?.(tenant.slug)}
+                      className="flex items-center justify-between rounded-xl py-4 px-4 font-black cursor-pointer focus:bg-green-400 focus:text-black uppercase text-sm border-2 border-transparent focus:border-black transition-all"
+                    >
+                      <span className="truncate mr-2">{tenant.name}</span>
+                      {tenantValue === tenant.slug && (
+                        <div className="bg-black rounded-full p-1">
+                           <CheckIcon className="size-4 text-white stroke-[4px] shrink-0" />
+                        </div>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </div>
               )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Library Button */}
+        {/* Library Button (Solid & Bold) */}
         {session.data?.user && (
           <Button
             asChild
             className={cn(
-              "h-14 px-4 sm:px-6 shrink-0 rounded-xl bg-green-500 hover:bg-green-600 text-black font-black uppercase tracking-tighter",
+              "h-16 px-6 sm:px-10 shrink-0 rounded-2xl bg-green-500 hover:bg-green-600 text-black font-black uppercase tracking-tighter",
               boldBorderStyle
             )}
           >
             <Link prefetch href="/library">
-              <BookmarkCheckIcon className="size-5 sm:mr-2 stroke-[3px]" />
-              <span className="text-xs sm:text-sm">Library</span>
+              <BookmarkCheckIcon className="size-6 sm:mr-2 stroke-[3px]" />
+              <span className="hidden xs:inline text-sm">Library</span>
             </Link>
           </Button>
         )}
