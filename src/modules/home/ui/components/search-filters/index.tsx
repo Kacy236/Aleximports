@@ -8,89 +8,72 @@ import { useParams } from "next/navigation";
 import { DEFAULT_BG_COLOR } from "../../../constants";
 import { BreadcrumbNavigation } from "./breadcrumbs-navigation";
 import { useProductFilters } from "@/modules/products/hooks/use-product-filters";
-import { StoreIcon } from "lucide-react"; // Import a store icon
 
 export const SearchFilters = () => {
-    const trpc = useTRPC();
-    
-    // Fetch Categories and Tenants (Assuming you have a getMany for tenants)
-    const { data: categories } = useSuspenseQuery(trpc.categories.getMany.queryOptions());
-    const { data: tenants } = useSuspenseQuery(trpc.tenants.getMany.queryOptions());
+  const trpc = useTRPC();
 
-    const [filters, setFilters] = useProductFilters();
+  // Fetch Categories and Tenants
+  const { data: categories } = useSuspenseQuery(trpc.categories.getMany.queryOptions());
+  const { data: tenants } = useSuspenseQuery(trpc.tenants.getMany.queryOptions());
 
-    const params = useParams();
-    const categoryParam = params.category as string | undefined;
-    const activeCategory = categoryParam || "all";
+  const [filters, setFilters] = useProductFilters();
 
-    const activeCategoryData = categories.find((category) => category.slug === activeCategory);
-    const activeCategoryColor = activeCategoryData?.color || DEFAULT_BG_COLOR;
-    const activeCategoryName = activeCategoryData?.name || null;
+  const params = useParams();
+  const categoryParam = params.category as string | undefined;
+  const activeCategory = categoryParam || "all";
 
-    const activeSubcategory = params.subcategory as string | undefined;
-    const activeSubcategoryName =
-        activeCategoryData?.subcategories?.find(
-            (subcategory) => subcategory.slug === activeSubcategory
-        )?.name || null;
+  const activeCategoryData = categories.find((category) => category.slug === activeCategory);
+  const activeCategoryColor = activeCategoryData?.color || DEFAULT_BG_COLOR;
+  const activeCategoryName = activeCategoryData?.name || null;
 
-    return (
-        <div 
-            className="px-4 lg:px-12 py-8 border-b flex flex-col gap-4 w-full transition-colors duration-500" 
-            style={{ backgroundColor: activeCategoryColor }}
-        >
-            <div className="flex flex-col md:flex-row gap-3">
-                {/* Product Search */}
-                <div className="flex-[2]">
-                    <SearchInput 
-                        placeholder="Search products..."
-                        defaultValue={filters.search} 
-                        onChange={(value) => setFilters({ search: value })}
-                    />
-                </div>
+  const activeSubcategory = params.subcategory as string | undefined;
+  const activeSubcategoryName =
+    activeCategoryData?.subcategories?.find(
+      (subcategory) => subcategory.slug === activeSubcategory
+    )?.name || null;
 
-                {/* Tenant/Store Search */}
-                <div className="flex-1">
-                    <div className="relative">
-                        <select
-                            value={filters.tenantSlug || ""}
-                            onChange={(e) => setFilters({ tenantSlug: e.target.value || undefined })}
-                            className="w-full h-11 px-4 py-2 bg-white border border-neutral-200 rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-green-500 font-medium"
-                        >
-                            <option value="">All Stores</option>
-                            {tenants?.map((tenant) => (
-                                <option key={tenant.id} value={tenant.slug}>
-                                    {tenant.name}
-                                </option>
-                            ))}
-                        </select>
-                        <StoreIcon className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400 pointer-events-none" />
-                    </div>
-                </div>
-            </div>
+  return (
+    <div
+      className="px-4 lg:px-12 py-8 border-b flex flex-col gap-4 w-full transition-colors duration-500"
+      style={{ backgroundColor: activeCategoryColor }}
+    >
+      <div className="w-full max-w-5xl mx-auto">
+        <SearchInput
+          placeholder="Search products..."
+          defaultValue={filters.search}
+          tenantValue={filters.tenantSlug}
+          tenants={tenants}
+          onChange={(value) => setFilters({ search: value })}
+          onTenantChange={(value) => setFilters({ tenantSlug: value })}
+        />
+      </div>
 
-            <div className="hidden lg:block">
-                <Category data={categories} />
-            </div>
+      <div className="hidden lg:block">
+        <Category data={categories} />
+      </div>
 
-            <BreadcrumbNavigation
-                activeCategoryName={activeCategoryName}
-                activeCategory={activeCategory}
-                activeSubcategoryName={activeSubcategoryName}
-            />
-        </div>
-    );
+      <BreadcrumbNavigation
+        activeCategoryName={activeCategoryName}
+        activeCategory={activeCategory}
+        activeSubcategoryName={activeSubcategoryName}
+      />
+    </div>
+  );
 };
 
 export const SearchFiltersSkeleton = () => {
-    return (
-        <div className="px-4 lg:px-12 py-8 border-b flex flex-col gap-4 w-full bg-neutral-50">
-            <div className="flex flex-col md:flex-row gap-3">
-                <div className="flex-[2] h-11 bg-neutral-200 animate-pulse rounded-md" />
-                <div className="flex-1 h-11 bg-neutral-200 animate-pulse rounded-md" />
-            </div>
-            <div className="hidden lg:block">
-                <div className="h-11 bg-neutral-100 rounded-md" />
-            </div>
+  return (
+    <div className="px-4 lg:px-12 py-8 border-b flex flex-col gap-4 w-full bg-neutral-50">
+      <div className="max-w-5xl mx-auto w-full flex flex-col gap-3">
+        <div className="w-full h-12 bg-neutral-200 animate-pulse rounded-md" />
+        <div className="flex gap-2">
+            <div className="flex-1 h-12 bg-neutral-200 animate-pulse rounded-md" />
+            <div className="w-12 h-12 bg-neutral-200 animate-pulse rounded-md" />
         </div>
-    )
-}
+      </div>
+      <div className="hidden lg:block">
+        <div className="h-11 bg-neutral-100 rounded-md" />
+      </div>
+    </div>
+  );
+};
