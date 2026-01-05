@@ -52,7 +52,6 @@ export const SearchInput = ({
 
   const activeTenantLabel = tenants?.find(t => t.slug === tenantValue)?.name || "All Stores";
 
-  // Filter stores based on the store search input
   const filteredTenants = useMemo(() => {
     if (!storeSearch) return tenants;
     return tenants?.filter((t) => 
@@ -125,7 +124,10 @@ export const SearchInput = ({
           
           <DropdownMenuContent 
             align="start" 
-            className="w-[280px] rounded-xl p-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white"
+            /* 1. Increased width to nearly full screen on mobile for better UX.
+               2. Ensure the dropdown doesn't get cut off.
+            */
+            className="w-[calc(100vw-40px)] sm:w-[320px] rounded-xl p-2 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white"
           >
             {/* Inline Store Search Input */}
             <div className="relative mb-2">
@@ -135,22 +137,31 @@ export const SearchInput = ({
                 placeholder="Find a store..."
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-lg border-2 border-black text-sm font-bold focus:outline-none focus:bg-green-50 placeholder:text-black/40"
+                /* Using text-base (16px) prevents iOS from auto-zooming 
+                   which usually breaks the layout when the keyboard opens. 
+                */
+                className="w-full h-12 pl-9 pr-10 rounded-lg border-2 border-black text-base sm:text-sm font-bold focus:outline-none focus:bg-green-50 placeholder:text-black/40"
               />
               {storeSearch && (
                 <button 
                   onClick={() => setStoreSearch("")}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
                 >
-                  <XIcon className="size-3 text-black" />
+                  <XIcon className="size-4 text-black" />
                 </button>
               )}
             </div>
 
-            <div className="max-h-[250px] overflow-y-auto custom-scrollbar">
+            {/* THE FIX: 
+                - Changed max-h-[250px] to max-h-[60svh] (Small Viewport Height).
+                - This allows the box to expand significantly on mobile while 
+                  remaining within the viewable area above the keyboard.
+                - Added overscroll-contain to stop the background from moving.
+            */}
+            <div className="max-h-[60svh] sm:max-h-[350px] overflow-y-auto custom-scrollbar overscroll-contain">
               <DropdownMenuItem 
                 onClick={() => onTenantChange?.(undefined)}
-                className="rounded-lg py-3 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
+                className="rounded-lg py-3.5 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
               >
                 ALL STORES
               </DropdownMenuItem>
@@ -158,7 +169,7 @@ export const SearchInput = ({
               <div className="h-[2px] bg-black my-1" />
               
               {filteredTenants?.length === 0 ? (
-                <div className="p-3 text-center text-xs font-bold text-black/50 uppercase">
+                <div className="p-8 text-center text-xs font-bold text-black/50 uppercase">
                   No stores found
                 </div>
               ) : (
@@ -166,7 +177,7 @@ export const SearchInput = ({
                   <DropdownMenuItem
                     key={tenant.id}
                     onClick={() => onTenantChange?.(tenant.slug)}
-                    className="flex items-center justify-between rounded-lg py-3 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
+                    className="flex items-center justify-between rounded-lg py-3.5 font-bold cursor-pointer focus:bg-green-400 focus:text-black uppercase text-xs"
                   >
                     <span className="truncate mr-2">{tenant.name}</span>
                     {tenantValue === tenant.slug && <CheckIcon className="size-4 stroke-[3px] shrink-0" />}
@@ -188,7 +199,7 @@ export const SearchInput = ({
           >
             <Link prefetch href="/library">
               <BookmarkCheckIcon className="size-5 sm:mr-2 stroke-[3px]" />
-              <span className="text-xs sm:text-sm">Library</span>
+              <span className="hidden xs:inline text-xs sm:text-sm">Library</span>
             </Link>
           </Button>
         )}
