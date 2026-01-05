@@ -98,9 +98,9 @@ export const Products: CollectionConfig = {
       label: "Product Images",
       required: true,
       type: "array",
-      minRows: 2,
+      minRows: 1,
       admin: {
-        description: "Upload two or more product images. The first image will be used as the thumbnail.",
+        description: "Upload one or more product images. The first image will be used as the thumbnail.",
       },
       fields: [
         {

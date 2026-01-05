@@ -16,7 +16,6 @@ import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { Media, Tenant } from "@/payload-types";
 
-// Dynamic import with SSR disabled is crucial for components using Browser Stores
 const CartButton = dynamic(
     () => import("../components/cart-button").then((mod) => mod.CartButton),
     {
@@ -31,7 +30,6 @@ interface ProductViewProps {
 }
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
-    // --- HYDRATION FIX ---
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
         setIsMounted(true);
@@ -43,7 +41,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    // --- DEFENSIVE DATA EXTRACTION ---
     const images = useMemo(() => data?.images || [], [data?.images]);
     
     const currentDisplayImage = useMemo(() => {
@@ -67,17 +64,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     };
 
-    // --- RENDER GUARD ---
-    if (!isMounted) {
-        return <ProductViewSkeleton />;
-    }
-
+    if (!isMounted) return <ProductViewSkeleton />;
     if (!data) return null;
 
     return (
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
-                {/* Main Image Display */}
                 <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
                     <Image
                         src={currentDisplayImage}
@@ -92,30 +84,30 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <button 
                                 onClick={prevImage}
                                 className={cn(
-                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200", 
+                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
+                                    "bg-white/90 border border-neutral-200 text-neutral-900", 
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    // Click effect (Scale down and darken slightly)
-                                    "active:scale-95 active:bg-neutral-200 cursor-pointer",
-                                    "hover:bg-white hover:text-green-500 lg:hover:scale-110 border border-transparent hover:border-green-500/20"
+                                    // Click effects: Shrink on all screens + Green flash
+                                    "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
+                                    "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
                                 aria-label="Previous image"
                             >
-                                <ChevronLeft className="size-5 sm:size-6 transition-colors" />
+                                <ChevronLeft className="size-5 sm:size-6" />
                             </button>
                             <button 
                                 onClick={nextImage}
                                 className={cn(
-                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200",
+                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
+                                    "bg-white/90 border border-neutral-200 text-neutral-900",
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    // Click effect (Scale down and darken slightly)
-                                    "active:scale-95 active:bg-neutral-200 cursor-pointer",
-                                    "hover:bg-white hover:text-green-500 lg:hover:scale-110 border border-transparent hover:border-green-500/20"
+                                    // Click effects: Shrink on all screens + Green flash
+                                    "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
+                                    "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
                                 aria-label="Next image"
                             >
-                                <ChevronRight className="size-5 sm:size-6 transition-colors" />
+                                <ChevronRight className="size-5 sm:size-6" />
                             </button>
                             
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
