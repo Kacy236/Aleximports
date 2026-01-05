@@ -36,6 +36,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     }, []);
 
     const trpc = useTRPC();
+    // useSuspenseQuery handles the "loading" state by throwing a promise caught by a parent Suspense boundary
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
     const [isCopied, setIsCopied] = useState(false);
@@ -43,13 +44,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
     const images = useMemo(() => data?.images || [], [data?.images]);
     
+    // --- UPDATED IMAGE LOGIC ---
+    // If no data/images yet, use placeholder. Otherwise, use the selected index.
     const currentDisplayImage = useMemo(() => {
+        if (!data || images.length === 0) return "/placeholder.png";
+        
         const imgObj = images[selectedImageIndex]?.image;
         if (imgObj && typeof imgObj === "object" && "url" in imgObj && imgObj.url) {
             return imgObj.url;
         }
         return "/placeholder.png";
-    }, [images, selectedImageIndex]);
+    }, [data, images, selectedImageIndex]);
 
     const tenant = data?.tenant as Tenant | undefined;
     const tenantImage = tenant?.image as Media | undefined;
@@ -71,11 +76,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
                 <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
+                    {/* The Placeholder or Real Image renders here */}
                     <Image
                         src={currentDisplayImage}
-                        alt={data.name || "Product Image"}
+                        alt={data?.name || "Product Image"}
                         fill
-                        className="object-contain"
+                        className="object-contain transition-opacity duration-300"
                         priority
                     />
 
@@ -87,7 +93,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
                                     "bg-white/90 border border-neutral-200 text-neutral-900", 
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    // Click effects: Shrink on all screens + Green flash
                                     "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
@@ -101,7 +106,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
                                     "bg-white/90 border border-neutral-200 text-neutral-900",
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    // Click effects: Shrink on all screens + Green flash
                                     "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
@@ -239,7 +243,10 @@ export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
           <div className="border rounded-sm bg-white overflow-hidden">
-              <div className="relative w-full h-[500px] border-b bg-neutral-100 animate-pulse" />
+              <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] border-b bg-neutral-100 animate-pulse flex items-center justify-center">
+                  {/* Shows placeholder even in skeleton state */}
+                  <Image src="/placeholder.png" alt="Loading" fill className="object-contain opacity-50" />
+              </div>
               <div className="p-6 space-y-4">
                   <div className="h-10 w-1/3 bg-neutral-100 rounded animate-pulse" />
                   <div className="h-20 w-full bg-neutral-100 rounded animate-pulse" />
