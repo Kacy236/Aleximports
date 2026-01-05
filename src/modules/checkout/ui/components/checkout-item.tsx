@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MinusIcon, PlusIcon } from "lucide-react";
 
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -12,10 +11,7 @@ interface CheckoutItemProps {
     tenantUrl: string;
     tenantName: string;
     price: number;
-    quantity: number; // Added
     onRemove: () => void;
-    onIncrease: () => void; // Added
-    onDecrease: () => void; // Added
 };
 
 export const CheckoutItem = ({
@@ -26,10 +22,7 @@ export const CheckoutItem = ({
     tenantUrl,
     tenantName,
     price,
-    quantity,
     onRemove,
-    onIncrease,
-    onDecrease,
 }: CheckoutItemProps) => {
     return (
         <div
@@ -60,43 +53,18 @@ export const CheckoutItem = ({
                 </div>
             </div>
 
-            <div className="py-4 flex flex-col justify-between items-end">
-                <p className="font-medium text-right">
+            <div className="py-4 flex flex-col justify-between">
+                <p className="font-meduim">
                     {formatCurrency(price)}
                 </p>
-
-                {/* Quantity Selector UI */}
-                <div className="flex items-center gap-x-2 bg-neutral-100 rounded-md p-1 my-2">
-                    <button 
-                        onClick={onDecrease}
-                        type="button"
-                        disabled={quantity <= 1}
-                        className="p-1 hover:text-green-600 disabled:opacity-30 transition-colors cursor-pointer"
-                    >
-                        <MinusIcon className="size-4" />
-                    </button>
-                    
-                    <span className="min-w-[1.5rem] text-center font-bold select-none">
-                        {quantity}
-                    </span>
-
-                    <button 
-                        onClick={onIncrease}
-                        type="button"
-                        className="p-1 hover:text-green-600 transition-colors cursor-pointer"
-                    >
-                        <PlusIcon className="size-4" />
-                    </button>
-                </div>
-
-                <button 
-                    className="underline text-sm font-medium cursor-pointer text-muted-foreground hover:text-red-500 transition-colors" 
-                    onClick={onRemove} 
+                <button
+                    className="underline font-medium cursor-pointer"
+                    onClick={onRemove}
                     type="button"
                 >
                     Remove
                 </button>
             </div>
         </div>
-    )
+    );
 };
