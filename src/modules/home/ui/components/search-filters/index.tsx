@@ -48,8 +48,24 @@ export const SearchFilters = () => {
                     />
                 </div>
 
-                
-                
+                {/* Tenant/Store Search */}
+                <div className="flex-1">
+                    <div className="relative">
+                        <select
+                            value={filters.tenantSlug || ""}
+                            onChange={(e) => setFilters({ tenantSlug: e.target.value || undefined })}
+                            className="w-full h-11 px-4 py-2 bg-white border border-neutral-200 rounded-md appearance-none focus:outline-none focus:ring-2 focus:ring-green-500 font-medium"
+                        >
+                            <option value="">All Stores</option>
+                            {tenants?.map((tenant) => (
+                                <option key={tenant.id} value={tenant.slug}>
+                                    {tenant.name}
+                                </option>
+                            ))}
+                        </select>
+                        <StoreIcon className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400 pointer-events-none" />
+                    </div>
+                </div>
             </div>
 
             <div className="hidden lg:block">
