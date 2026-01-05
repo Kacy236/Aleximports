@@ -64,81 +64,77 @@ export const SearchInput = ({
         return () => clearTimeout(timeoutId);
     }, [searchValue, onChange]);
 
-    // Reusable bold border class
-    const boldBorder = "border-2 border-neutral-900 focus-visible:ring-offset-0";
+    // Bold border utility
+    const boldBorder = "border-2 border-neutral-900 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]";
 
     return (
-        <div className="w-full max-w-6xl mx-auto">
+        <div className="w-full max-w-7xl mx-auto px-4">
             <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-            {/* Main Container: 
-                - Mobile: flex-col (stacked)
-                - Desktop (md): flex-row (single line)
+            {/* Main Wrapper: 
+                Mobile: flex-col (Group 1 and Group 2 stack)
+                Desktop: flex-row (Everything stays on one line)
             */}
             <div className="flex flex-col md:flex-row items-center gap-3 w-full">
                 
-                {/* Search Bar Group */}
-                <div className="relative flex-1 w-full group">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400 group-focus-within:text-green-600 transition-colors" />
-                    <Input
+                {/* GROUP 1: Search & Categories Toggle (Side-by-side on Mobile) */}
+                <div className="flex items-center gap-2 w-full md:flex-1">
+                    <div className="relative flex-1 group">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400 group-focus-within:text-black transition-colors" />
+                        <Input
+                            className={cn(
+                                "pl-9 h-12 bg-white rounded-xl font-medium",
+                                boldBorder
+                            )}
+                            placeholder={placeholder}
+                            disabled={disabled}
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                        />
+                    </div>
+
+                    <Button
+                        variant="outline"
                         className={cn(
-                            "pl-9 h-12 bg-white rounded-xl shadow-sm transition-all focus-visible:ring-green-500",
+                            "size-12 shrink-0 md:hidden rounded-xl bg-white hover:bg-neutral-50",
                             boldBorder
                         )}
-                        placeholder={placeholder}
-                        disabled={disabled}
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                    />
+                        onClick={() => setIsSidebarOpen(true)}
+                    >
+                        <ListFilterIcon className="size-5" />
+                    </Button>
                 </div>
 
-                {/* Mobile Category Toggle (hidden on Desktop) */}
-                <Button
-                    variant="outline"
-                    className={cn(
-                        "size-12 shrink-0 md:hidden rounded-xl hover:bg-green-50 hover:text-green-600",
-                        boldBorder
-                    )}
-                    onClick={() => setIsSidebarOpen(true)}
-                >
-                    <ListFilterIcon className="size-5" />
-                </Button>
-
-                {/* Desktop/Mobile Wrappers: On desktop these join the line above */}
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    {/* Store Selector */}
+                {/* GROUP 2: Store Selector & Library (Side-by-side on Mobile) */}
+                <div className="flex items-center gap-2 w-full md:w-auto">
                     <Popover open={isStoreOpen} onOpenChange={setIsStoreOpen}>
                         <PopoverTrigger asChild>
                             <Button
                                 variant="outline"
                                 role="combobox"
-                                aria-expanded={isStoreOpen}
                                 className={cn(
-                                    "h-12 flex-1 md:flex-none md:min-w-[180px] justify-between rounded-xl bg-white px-4 font-semibold hover:bg-green-50/50",
+                                    "h-12 flex-1 md:w-[180px] justify-between rounded-xl bg-white px-4 font-bold hover:bg-neutral-50",
                                     boldBorder,
-                                    tenantValue && "border-green-600 bg-green-50/30 text-green-700"
+                                    tenantValue && "bg-green-50 border-green-600 text-green-700"
                                 )}
                                 disabled={disabled}
                             >
                                 <div className="flex items-center gap-2 truncate">
-                                    <StoreIcon className={cn("size-4 text-neutral-400", tenantValue && "text-green-600")} />
-                                    {selectedStore ? selectedStore.name : "All Stores"}
+                                    <StoreIcon className="size-4 shrink-0" />
+                                    <span className="truncate">{selectedStore ? selectedStore.name : "All Stores"}</span>
                                 </div>
-                                <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
+                                <ChevronDown className="size-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[280px] p-0 rounded-xl shadow-xl border-2 border-neutral-900" align="end">
-                            <Command className="rounded-xl">
-                                <CommandInput placeholder="Search stores..." className="h-10" />
+                        <PopoverContent className="w-[250px] p-0 rounded-xl border-2 border-neutral-900 shadow-xl" align="end">
+                            <Command>
+                                <CommandInput placeholder="Search stores..." />
                                 <CommandList>
                                     <CommandEmpty>No store found.</CommandEmpty>
                                     <CommandGroup>
                                         <CommandItem
-                                            onSelect={() => {
-                                                onTenantChange?.("");
-                                                setIsStoreOpen(false);
-                                            }}
-                                            className="py-3 cursor-pointer"
+                                            onSelect={() => { onTenantChange?.(""); setIsStoreOpen(false); }}
+                                            className="cursor-pointer"
                                         >
                                             <div className="flex items-center justify-between w-full">
                                                 <span>All Stores</span>
@@ -148,14 +144,11 @@ export const SearchInput = ({
                                         {tenants?.map((t) => (
                                             <CommandItem
                                                 key={t.id}
-                                                onSelect={() => {
-                                                    onTenantChange?.(t.slug);
-                                                    setIsStoreOpen(false);
-                                                }}
-                                                className="py-3 cursor-pointer"
+                                                onSelect={() => { onTenantChange?.(t.slug); setIsStoreOpen(false); }}
+                                                className="cursor-pointer"
                                             >
                                                 <div className="flex items-center justify-between w-full">
-                                                    <span>{t.name}</span>
+                                                    <span className="truncate">{t.name}</span>
                                                     {tenantValue === t.slug && <Check className="size-4 text-green-600" />}
                                                 </div>
                                             </CommandItem>
@@ -166,19 +159,18 @@ export const SearchInput = ({
                         </PopoverContent>
                     </Popover>
 
-                    {/* Library Button */}
                     {session.data?.user && (
                         <Button
                             asChild
                             variant="outline"
                             className={cn(
-                                "h-12 px-5 flex-1 md:flex-none rounded-xl hover:bg-neutral-900 hover:text-white transition-all group",
+                                "h-12 px-5 flex-1 md:flex-none rounded-xl bg-white hover:bg-neutral-900 hover:text-white transition-all group",
                                 boldBorder
                             )}
                         >
-                            <Link prefetch href="/library">
-                                <BookmarkCheckIcon className="mr-2 size-4 text-green-600 group-hover:text-green-400 transition-colors" />
-                                <span className="font-bold">Library</span>
+                            <Link href="/library">
+                                <BookmarkCheckIcon className="mr-2 size-4 text-green-600 group-hover:text-green-400" />
+                                <span className="font-black uppercase text-xs tracking-wider">Library</span>
                             </Link>
                         </Button>
                     )}
