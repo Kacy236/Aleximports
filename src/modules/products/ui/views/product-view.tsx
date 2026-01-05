@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { Media, Tenant } from "@/payload-types";
 
+// Dynamic import with SSR disabled is crucial for components using Browser Stores
 const CartButton = dynamic(
     () => import("../components/cart-button").then((mod) => mod.CartButton),
     {
@@ -30,13 +31,19 @@ interface ProductViewProps {
 }
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
+    // --- HYDRATION FIX ---
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const trpc = useTRPC();
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    // ✅ FIX: Defensive Image Extraction
+    // --- DEFENSIVE DATA EXTRACTION ---
     const images = useMemo(() => data?.images || [], [data?.images]);
     
     const currentDisplayImage = useMemo(() => {
@@ -47,19 +54,25 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return "/placeholder.png";
     }, [images, selectedImageIndex]);
 
-    // ✅ FIX: Defensive Tenant Handling
     const tenant = data?.tenant as Tenant | undefined;
     const tenantImage = tenant?.image as Media | undefined;
 
     const nextImage = () => {
-        if (images.length === 0) return;
+        if (images.length <= 1) return;
         setSelectedImageIndex((prev) => (prev + 1) % images.length);
     };
 
     const prevImage = () => {
-        if (images.length === 0) return;
+        if (images.length <= 1) return;
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     };
+
+    // --- RENDER GUARD ---
+    // If not mounted, show the skeleton. This stops the "Client-side exception"
+    // caused by the server trying to render store-dependent UI.
+    if (!isMounted) {
+        return <ProductViewSkeleton />;
+    }
 
     if (!data) return null;
 
@@ -116,7 +129,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         <div className="border-y flex flex-wrap">
                             <div className="px-6 py-4 flex items-center justify-center border-r">
                                 <div className="px-2 py-1 border bg-green-500 w-fit">
-                                    <p className="text-base font-medium">{formatCurrency(data.price)}</p>
+                                    <p className="text-base font-medium">
+                                        {/* Added Number() cast to prevent currency formatting crashes */}
+                                        {formatCurrency(Number(data.price || 0))}
+                                    </p>
                                 </div>
                             </div>
 
@@ -125,7 +141,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     {tenantImage?.url && (
                                         <Image 
                                           src={tenantImage.url}
-                                          alt={tenant?.name || "Tenant"}
+                                          alt={tenant?.name || "Store"}
                                           width={20}
                                           height={20}
                                           className="rounded-full border shrink-0 size-[20px]"
@@ -206,7 +222,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     <Fragment key={stars}>
                                         <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
                                         <Progress 
-                                          // ✅ FIX: Optional chaining on distribution object
                                           value={data.ratingDistribution?.[stars] ?? 0}
                                           className="h-[1lh]"
                                         />
@@ -229,10 +244,10 @@ export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
           <div className="border rounded-sm bg-white overflow-hidden">
-              <div className="relative aspect-video border-b bg-neutral-200 animate-pulse" />
+              <div className="relative w-full h-[500px] border-b bg-neutral-100 animate-pulse" />
               <div className="p-6 space-y-4">
-                  <div className="h-10 w-1/3 bg-neutral-200 rounded animate-pulse" />
-                  <div className="h-20 w-full bg-neutral-200 rounded animate-pulse" />
+                  <div className="h-10 w-1/3 bg-neutral-100 rounded animate-pulse" />
+                  <div className="h-20 w-full bg-neutral-100 rounded animate-pulse" />
               </div>
           </div>
         </div>
