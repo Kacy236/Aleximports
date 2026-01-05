@@ -74,7 +74,7 @@ export const SearchInput = ({
     <div className="flex flex-col lg:flex-row items-center gap-3 w-full max-w-6xl mx-auto p-1">
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-      {/* SEARCH + FILTER GROUP: Side-by-side on mobile, integrated on desktop */}
+      {/* TOP ROW ON MOBILE: SEARCH + FILTER TOGETHER */}
       <div className="flex flex-row items-center gap-2 w-full flex-1">
         {/* PRODUCT SEARCH */}
         <div className="relative flex-1">
@@ -91,7 +91,7 @@ export const SearchInput = ({
           />
         </div>
 
-        {/* MOBILE FILTER BUTTON: Appears beside search on mobile only */}
+        {/* MOBILE FILTER BUTTON (Beside Search) */}
         <Button
           variant="outline"
           type="button"
@@ -105,7 +105,7 @@ export const SearchInput = ({
         </Button>
       </div>
 
-      {/* STORE SELECTOR + LIBRARY GROUP */}
+      {/* BOTTOM ROW ON MOBILE: STORE SELECTOR + LIBRARY */}
       <div className="flex items-center gap-3 w-full lg:w-auto">
         <DropdownMenu
           onOpenChange={(open) => {
@@ -194,18 +194,18 @@ export const SearchInput = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* LIBRARY */}
+        {/* LIBRARY: Word "Library" is now always visible */}
         {session.data?.user && (
           <Button
             asChild
             className={cn(
-              "h-14 px-6 shrink-0 rounded-xl bg-green-500 hover:bg-green-600 text-black font-black uppercase",
+              "h-14 px-4 shrink-0 rounded-xl bg-green-500 hover:bg-green-600 text-black font-black uppercase",
               boldBorderStyle
             )}
           >
             <Link href="/library">
-              <BookmarkCheckIcon className="size-5 lg:mr-2 stroke-[3px]" />
-              <span className="hidden lg:inline text-sm">Library</span>
+              <BookmarkCheckIcon className="size-5 mr-2 stroke-[3px]" />
+              <span className="text-xs sm:text-sm">Library</span>
             </Link>
           </Button>
         )}
