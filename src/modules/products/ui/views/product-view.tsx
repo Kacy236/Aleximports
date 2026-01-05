@@ -93,9 +93,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 onClick={prevImage}
                                 className={cn(
                                     "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200", // Background/Border visible on mobile
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100", // Hidden only on large screens until hover
-                                    "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
+                                    "bg-white/90 border border-neutral-200", 
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
+                                    // Click effect (Scale down and darken slightly)
+                                    "active:scale-95 active:bg-neutral-200 cursor-pointer",
+                                    "hover:bg-white hover:text-green-500 lg:hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Previous image"
                             >
@@ -105,9 +107,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 onClick={nextImage}
                                 className={cn(
                                     "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-200",
-                                    "bg-white/90 border border-neutral-200", // Background/Border visible on mobile
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100", // Hidden only on large screens until hover
-                                    "cursor-pointer hover:bg-white hover:text-green-500 hover:scale-110 border border-transparent hover:border-green-500/20"
+                                    "bg-white/90 border border-neutral-200",
+                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
+                                    // Click effect (Scale down and darken slightly)
+                                    "active:scale-95 active:bg-neutral-200 cursor-pointer",
+                                    "hover:bg-white hover:text-green-500 lg:hover:scale-110 border border-transparent hover:border-green-500/20"
                                 )}
                                 aria-label="Next image"
                             >
@@ -136,7 +140,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
 
                             <div className="px-6 py-4 flex items-center justify-center lg:border-r">
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group/tenant">
                                     {tenantImage?.url && (
                                         <Image 
                                           src={tenantImage.url}
@@ -146,7 +150,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                           className="rounded-full border shrink-0 size-[20px]"
                                         />
                                     )}
-                                    <p className="text-base underline font-medium">
+                                    <p className="text-base font-medium underline underline-offset-4 decoration-neutral-300 group-hover/tenant:decoration-green-500 transition-colors">
                                       {tenant?.name || "Store"}  
                                     </p>
                                 </Link>
