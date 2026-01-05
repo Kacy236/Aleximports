@@ -74,9 +74,8 @@ export const SearchInput = ({
     <div className="flex flex-col lg:flex-row items-center gap-3 w-full max-w-6xl mx-auto p-1">
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-      {/* TOP ROW ON MOBILE: SEARCH + FILTER TOGETHER */}
+      {/* TOP ROW: SEARCH + FILTER */}
       <div className="flex flex-row items-center gap-2 w-full flex-1">
-        {/* PRODUCT SEARCH */}
         <div className="relative flex-1">
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black z-10" />
           <Input
@@ -91,7 +90,6 @@ export const SearchInput = ({
           />
         </div>
 
-        {/* MOBILE FILTER BUTTON (Beside Search) */}
         <Button
           variant="outline"
           type="button"
@@ -105,7 +103,7 @@ export const SearchInput = ({
         </Button>
       </div>
 
-      {/* BOTTOM ROW ON MOBILE: STORE SELECTOR + LIBRARY */}
+      {/* BOTTOM ROW: STORE SELECTOR + LIBRARY */}
       <div className="flex items-center gap-3 w-full lg:w-auto">
         <DropdownMenu
           onOpenChange={(open) => {
@@ -132,18 +130,18 @@ export const SearchInput = ({
             </Button>
           </DropdownMenuTrigger>
 
+          {/* 🔥 ALIGN CENTERED */}
           <DropdownMenuContent
             side="bottom"
-            align="end"
-            sideOffset={8}
-            avoidCollisions={false}
-            collisionPadding={16}
-            className="w-[calc(100vw-40px)] sm:w-[320px]
+            align="center" 
+            sideOffset={12}
+            avoidCollisions={true}
+            className="w-[calc(100vw-32px)] sm:w-[350px]
                        max-h-[70vh]
                        rounded-xl p-2
                        border-2 border-black
-                       shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]
-                       bg-white overflow-hidden"
+                       shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
+                       bg-white overflow-hidden z-50"
           >
             {/* STORE SEARCH */}
             <div className="relative mb-2">
@@ -167,7 +165,7 @@ export const SearchInput = ({
             </div>
 
             {/* SCROLLABLE STORE LIST */}
-            <div className="max-h-[55vh] overflow-y-auto overscroll-contain">
+            <div className="max-h-[50vh] overflow-y-auto overscroll-contain">
               <DropdownMenuItem
                 onClick={() => onTenantChange?.(undefined)}
                 className="rounded-lg py-3.5 font-bold cursor-pointer focus:bg-green-400 uppercase text-xs"
@@ -194,7 +192,7 @@ export const SearchInput = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* LIBRARY: Word "Library" is now always visible */}
+        {/* LIBRARY */}
         {session.data?.user && (
           <Button
             asChild
@@ -203,8 +201,8 @@ export const SearchInput = ({
               boldBorderStyle
             )}
           >
-            <Link href="/library">
-              <BookmarkCheckIcon className="size-5 mr-2 stroke-[3px]" />
+            <Link href="/library" className="flex items-center">
+              <BookmarkCheckIcon className="size-5 mr-2 shrink-0 stroke-[3px]" />
               <span className="text-xs sm:text-sm">Library</span>
             </Link>
           </Button>
