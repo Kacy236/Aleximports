@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { DEFAULT_LIMIT } from "@/constants";
 import { useTRPC } from "@/trpc/client";
-
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 
 import { useProductFilters } from "../../hooks/use-product-filters";
@@ -18,10 +17,17 @@ interface Props {
   narrowView?: boolean;
 }
 
-export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
+export const ProductList = ({ category, tenantSlug: propTenantSlug, narrowView }: Props) => {
   const [filters] = useProductFilters();
-
   const trpc = useTRPC();
+
+  /**
+   * RESOLVE TENANT SLUG:
+   * 1. If 'propTenantSlug' exists, the component is likely locked to a specific store page.
+   * 2. Otherwise, we use 'filters.tenantSlug' which comes from your SearchInput dropdown/URL.
+   */
+  const activeTenantSlug = propTenantSlug || filters.tenantSlug;
+
   const { 
       data, 
       hasNextPage, 
@@ -31,7 +37,7 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
       {
           ...filters,
           category,
-          tenantSlug,
+          tenantSlug: activeTenantSlug,
           limit: DEFAULT_LIMIT,
       },
       {
@@ -41,16 +47,20 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
       }
   ));
 
+  // Access the first page to check if we have results
   if (data.pages?.[0]?.docs.length === 0) {
       return (
-          <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
-              <InboxIcon />
-              <p className="text-base font-medium">No Products found</p>
+          <div className="border border-black border-dashed flex items-center justify-center p-12 flex-col gap-y-4 bg-white w-full rounded-lg">
+              <InboxIcon className="size-10 text-neutral-400" />
+              <div className="text-center">
+                <p className="text-lg font-medium">No Products found</p>
+                <p className="text-sm text-muted-foreground">Try adjusting your search or store filters.</p>
+              </div>
           </div>
       )
   }
 
-  return(
+  return (
       <>
       <div
         className={cn(
@@ -58,10 +68,7 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
           narrowView && "lg:grid-cols-2 xl:grid-cols-3"
         )}>
           {data?.pages.flatMap((page) => page.docs).map((product) => {
-              /** * ✅ THE FIX:
-               * We grab the first item in the 'images' array.
-               * We then access the 'image' field inside that array row.
-               */
+              // Extract the first image from the Payload CMS array structure
               const firstImageRow = product.images?.[0];
               const imageObject = firstImageRow?.image as Media | undefined;
               const imageUrl = imageObject?.url;

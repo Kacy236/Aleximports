@@ -5,6 +5,19 @@ import { Media, Tenant } from "@/payload-types";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 export const tenantsRouter = createTRPCRouter({
+    // ✅ ADDED getMany to resolve the build error
+    getMany: baseProcedure
+        .query(async ({ ctx }) => {
+            const tenants = await ctx.db.find({
+                collection: "tenants",
+                depth: 1,
+                pagination: false, // We want all tenants for the filter list
+                sort: "name",      // Optional: sort alphabetically
+            });
+
+            return tenants.docs as (Tenant & { image: Media | null })[];
+        }),
+
     getOne: baseProcedure
     .input(
       z.object({
@@ -14,7 +27,7 @@ export const tenantsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
            const tenantsData = await ctx.db.find({
             collection: "tenants",
-            depth: 1, // "tenant.image" is a type of "Media"
+            depth: 1, 
             where: {
               slug: {
                 equals: input.slug,

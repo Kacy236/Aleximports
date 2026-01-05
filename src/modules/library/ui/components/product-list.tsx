@@ -7,13 +7,10 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { ProductCard, ProductCardSkeleton } from "./product-card";
 import { InboxIcon } from "lucide-react";
 import { Media, Product, Tenant } from "@/payload-types";
-
-// Define a local type for our product with populated fields
-type PopulatedProduct = Product & {
-  tenant: Tenant & { image: Media | null };
-};
+import { useProductFilters } from "@/modules/products/hooks/use-product-filters"; 
 
 export const ProductList = () => {
+  const [filters] = useProductFilters();
   const trpc = useTRPC();
   
   const { 
@@ -24,6 +21,7 @@ export const ProductList = () => {
   } = useSuspenseInfiniteQuery(
     (trpc.library.getMany.infiniteQueryOptions as any)(
       {
+        ...filters,
         limit: DEFAULT_LIMIT,
         cursor: 1 as number | null,
       },
@@ -32,17 +30,16 @@ export const ProductList = () => {
         getNextPageParam: (lastPage: any) => lastPage.nextPage ?? null,
       }
     )
-  ) as any; // ✅ Casting the result to 'any' allows us to access .pages
+  ) as any;
 
-  // Since we used 'as any', we can now safely access the deeply nested properties
   const pages = data?.pages || [];
   const firstPageDocs = pages[0]?.docs || [];
 
   if (firstPageDocs.length === 0) {
     return (
       <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
-        <InboxIcon />
-        <p className="text-base font-medium">No Products found</p>
+        <InboxIcon className="size-8 text-neutral-400" />
+        <p className="text-base font-medium text-neutral-600">No products found matching your search</p>
       </div>
     );
   }
@@ -51,7 +48,6 @@ export const ProductList = () => {
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
         {pages.flatMap((page: any) => page.docs || []).map((product: any) => {
-          // Handle the multi-image structure
           const firstImageRow = product.images?.[0];
           const imageObject = firstImageRow?.image as Media | undefined;
           const imageUrl = imageObject?.url;
@@ -70,6 +66,7 @@ export const ProductList = () => {
           );
         })}
       </div>
+
       <div className="flex justify-center pt-8">
         {hasNextPage && (
           <Button
@@ -86,6 +83,7 @@ export const ProductList = () => {
   );
 };
 
+// ✅ ADDED THIS EXPORT TO FIX THE BUILD ERROR
 export const ProductListSkeleton = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">

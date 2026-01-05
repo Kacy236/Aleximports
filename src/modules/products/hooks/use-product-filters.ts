@@ -8,18 +8,24 @@ const params = {
           clearOnDefault: true,
       })
       .withDefault(""),
+    // ✅ ADD THIS: Track the store/tenant slug in the URL
+    tenantSlug: parseAsString
+      .withOptions({
+          clearOnDefault: true,
+      })
+      .withDefault(""), 
     sort: parseAsStringLiteral(sortValues).withDefault("curated"),
     minPrice: parseAsString
           .withOptions({
               clearOnDefault: true,
           })
           .withDefault(""),
-          maxPrice: parseAsString
+    maxPrice: parseAsString
           .withOptions({
               clearOnDefault: true,
           })
           .withDefault(""),
-          tags: parseAsArrayOf(parseAsString)
+    tags: parseAsArrayOf(parseAsString)
           .withOptions({
               clearOnDefault: true,
           })
@@ -29,4 +35,3 @@ const params = {
 export const useProductFilters = () => {
     return useQueryStates(params);
 };
-
