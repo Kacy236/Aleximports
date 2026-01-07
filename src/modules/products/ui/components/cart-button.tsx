@@ -8,16 +8,27 @@ import { useEffect, useState } from "react";
 interface Props {
     tenantSlug: string;
     productId: string;
-    variantId?: string; // ✅ ADDED: This fixes the "variantId does not exist on type Props" error
+    /** ✅ The specific ID for the chosen variant */
+    variantId?: string; 
+    /** ✅ The human-readable name (e.g., "Blue / XL") to be stored in the order */
+    variantName?: string; 
     isPurchased?: boolean;
-    disabled?: boolean; // Added for better UX control
+    disabled?: boolean;
 };
 
-export const CartButton = ({ tenantSlug, productId, variantId, isPurchased, disabled }: Props) => {
+export const CartButton = ({ 
+    tenantSlug, 
+    productId, 
+    variantId, 
+    variantName, 
+    isPurchased, 
+    disabled 
+}: Props) => {
     const [isMounted, setIsMounted] = useState(false);
     
     const cart = useCart(tenantSlug); 
 
+    // Handle hydration to prevent mismatch between server and client HTML
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -42,15 +53,19 @@ export const CartButton = ({ tenantSlug, productId, variantId, isPurchased, disa
         );
     }
 
-    // ✅ CHECK: Use both productId and variantId to check if THIS specific version is in cart
+    /** * ✅ CHECK: uses both IDs to determine if this exact 
+     * version of the product is already in the cart.
+     */
     const isInCart = cart.isProductInCart(productId, variantId);
 
     const handleCartAction = () => {
         if (isInCart) {
             cart.removeProduct(productId, variantId);
         } else {
-            // ✅ PASS VARIANT: Now the cart store knows exactly which color/size to add
-            cart.addProduct(productId, variantId);
+            /** * ✅ THE FIX: We now pass the variantName. 
+             * This travels: Button -> Hook -> Store -> Checkout -> Paystack -> Webhook -> Database.
+             */
+            cart.addProduct(productId, variantId, variantName);
         }
     };
 
@@ -59,8 +74,8 @@ export const CartButton = ({ tenantSlug, productId, variantId, isPurchased, disa
           variant="elevated"
           disabled={disabled}
           className={cn(
-            "flex-1 bg-green-500 hover:bg-green-600 transition-colors", 
-            isInCart && "bg-white text-black border border-neutral-200"
+            "flex-1 bg-green-500 hover:bg-green-600 transition-colors font-semibold", 
+            isInCart && "bg-white text-black border border-neutral-200 hover:bg-neutral-50"
           )}
           onClick={handleCartAction}
         >

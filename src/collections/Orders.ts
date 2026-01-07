@@ -4,6 +4,7 @@ import type { CollectionConfig } from "payload";
 /**
  * Orders Collection
  * Stores transaction history and line items (variants) for each purchase.
+ * Updated to include variantName for human-readable order history.
  */
 
 export const Orders: CollectionConfig = {
@@ -66,10 +67,23 @@ export const Orders: CollectionConfig = {
         {
           name: "variantId", 
           type: "text",
+          admin: {
+            description: "The technical ID of the variant"
+          }
+        },
+        {
+          /* ✅ THE FIX: Added variantName to store the human-readable selection */
+          name: "variantName",
+          type: "text",
+          admin: {
+            placeholder: "e.g. Blue / Large",
+            description: "The specific options selected by the user",
+          },
         },
         {
           name: "priceAtPurchase", 
           type: "number",
+          required: true,
         },
       ],
     },
@@ -83,7 +97,6 @@ export const Orders: CollectionConfig = {
       },
     },
     {
-      // ✅ THE FIX: Added this field so Webhook 'paystackTransactionId' works
       name: "paystackTransactionId",
       type: "text",
       admin: {

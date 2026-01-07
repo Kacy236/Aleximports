@@ -9,7 +9,7 @@ export const useCart = (tenantSlug: string) => {
     const clearCart = useCartStore((state) => state.clearCart);
     const clearAllCarts = useCartStore((state) => state.clearAllCarts);
 
-    // ✅ Now tracking 'items' objects instead of just 'productIds' strings
+    // ✅ Now tracking 'items' objects including productId, variantId, and variantName
     const items = useCartStore(
         useShallow(
             (state) =>
@@ -27,11 +27,12 @@ export const useCart = (tenantSlug: string) => {
     );
 
     const toggleProduct = useCallback(
-        (productId: string, variantId?: string) => {
+        (productId: string, variantId?: string, variantName?: string) => {
             if (isProductInCart(productId, variantId)) {
                 removeProduct(tenantSlug, productId, variantId);
             } else {
-                addProduct(tenantSlug, productId, variantId);
+                // ✅ Pass variantName through toggle
+                addProduct(tenantSlug, productId, variantId, variantName);
             }
         },
         [addProduct, removeProduct, isProductInCart, tenantSlug]
@@ -42,8 +43,9 @@ export const useCart = (tenantSlug: string) => {
     }, [tenantSlug, clearCart]);
 
     const handleAddProduct = useCallback(
-        (productId: string, variantId?: string) => {
-            addProduct(tenantSlug, productId, variantId);
+        (productId: string, variantId?: string, variantName?: string) => {
+            // ✅ Pass variantName to the store's addProduct
+            addProduct(tenantSlug, productId, variantId, variantName);
         },
         [addProduct, tenantSlug]
     );
@@ -56,7 +58,7 @@ export const useCart = (tenantSlug: string) => {
     );
 
     return {
-        items, // Returns the array of { productId, variantId }
+        items, // Returns the array of { productId, variantId, variantName }
         addProduct: handleAddProduct,
         removeProduct: handleRemoveProduct,
         clearCart: clearTenantCart,

@@ -53,6 +53,8 @@ export async function POST(req: Request) {
           items: metadata.products.map((p) => ({
             productName: p.name,
             variantId: p.variantId || undefined,
+            /* ✅ THE FIX: Map the variantName from metadata to the Order record */
+            variantName: p.variantName || undefined, 
             priceAtPurchase: p.price,
           })),
           paystackReference: data.reference,

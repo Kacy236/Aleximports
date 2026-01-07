@@ -4,6 +4,7 @@ export type PaystackProductMetadata = {
   name: string;
   price: number;
   variantId?: string;
+  variantName?: string;
 };
 
 // The full metadata object Paystack will receive

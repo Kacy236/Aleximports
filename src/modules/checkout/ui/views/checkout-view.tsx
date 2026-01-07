@@ -22,13 +22,11 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     const router = useRouter();
     const [states, setStates] = useCheckoutStates();
     
-    // items is now [{ productId, variantId }, ...]
     const { items, removeProduct, clearCart } = useCart(tenantSlug);
 
     const trpc = useTRPC();
     const queryClient = useQueryClient();
     
-    // Extract unique IDs for the query
     const flatIds = useMemo(() => items.map(i => i.productId), [items]);
 
     const { data, error, isLoading } = useQuery(
@@ -55,10 +53,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         })
     );
 
-    /**
-     * ✅ DYNAMIC TOTAL CALCULATION
-     * Matches the specific variant price if a variantId exists in the cart item
-     */
     const totalAmount = useMemo(() => {
         if (!data?.docs || items.length === 0) return 0;
 
@@ -68,7 +62,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
 
             let price = Number(product.price || 0);
 
-            // If user picked a variant, check for a price override
             if (cartItem.variantId && product.hasVariants) {
                 const variant = (product as any).variants?.find(
                     (v: any) => v.id === cartItem.variantId
@@ -127,18 +120,21 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 <div className="lg:col-span-4">
                     <div className="border rounded-md overflow-hidden bg-white">
                         {items.map((cartItem, index) => {
-                            // Find product data for this cart item
                             const product = data.docs.find(p => p.id === cartItem.productId);
                             if (!product) return null;
 
                             const firstImageRow = product.images?.[0];
                             const imageObject = firstImageRow?.image as Media | undefined;
                             
-                            // Determine display price (variant vs base)
                             let displayPrice = product.price;
+                            let variantDisplayName = "";
+
                             if (cartItem.variantId && product.hasVariants) {
                                 const variant = (product as any).variants?.find((v: any) => v.id === cartItem.variantId);
                                 if (variant?.variantPrice) displayPrice = variant.variantPrice;
+                                
+                                // ✅ Construct the name for the UI
+                                variantDisplayName = [variant?.color, variant?.size].filter(Boolean).join(" / ");
                             }
 
                             return (
@@ -147,11 +143,12 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                                     isLast={index === items.length - 1}
                                     imageUrl={imageObject?.url}
                                     name={product.name}
+                                    /* ✅ Pass variant name to the item component */
+                                    variantName={variantDisplayName} 
                                     productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
                                     tenantUrl={generateTenantURL(product.tenant.slug)}
                                     tenantName={product.tenant.name}
                                     price={displayPrice}
-                                    // Match new removeProduct signature
                                     onRemove={() => removeProduct(cartItem.productId, cartItem.variantId)}
                                 />
                             );
@@ -162,10 +159,23 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 <div className="lg:col-span-3">
                     <CheckoutSidebar
                         total={totalAmount} 
-                        // ✅ Updated to send cartItems (array of objects) instead of productIds (array of strings)
                         onPurchase={() => purchase.mutate({ 
                             tenantSlug, 
-                            cartItems: items.map(i => ({ productId: i.productId, variantId: i.variantId })) 
+                            /* ✅ Updated map to include variantName for the backend/Paystack */
+                            cartItems: items.map(i => {
+                                const product = data.docs.find(p => p.id === i.productId);
+                                let vName = "";
+                                if (i.variantId && product?.hasVariants) {
+                                    const v = (product as any).variants?.find((v: any) => v.id === i.variantId);
+                                    vName = [v?.color, v?.size].filter(Boolean).join(" / ");
+                                }
+
+                                return { 
+                                    productId: i.productId, 
+                                    variantId: i.variantId,
+                                    variantName: vName || "Standard" 
+                                };
+                            }) 
                         })}
                         isCanceled={states.cancel}
                         disabled={purchase.isPending}

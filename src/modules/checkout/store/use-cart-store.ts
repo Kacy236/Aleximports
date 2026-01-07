@@ -1,21 +1,21 @@
 import { create } from "zustand";
 
-// 1. Define the structure for a specific item in the cart
+// 1. ✅ Updated structure to include variantName
 export type CartItem = {
   productId: string;
-  variantId?: string; // Optional: only present if the product has variants
+  variantId?: string; 
+  variantName?: string; // Add this to store "Blue / XL"
 };
 
 interface TenantCart {
-  // Changed from string[] to CartItem[]
   items: CartItem[]; 
 }
 
 interface CartState {
   tenantCarts: Record<string, TenantCart>;
   getCartByTenant: (tenantSlug: string) => TenantCart;
-  // Updated signatures to include optional variantId
-  addProduct: (tenantSlug: string, productId: string, variantId?: string) => void;
+  // ✅ Updated signatures to accept variantName
+  addProduct: (tenantSlug: string, productId: string, variantId?: string, variantName?: string) => void;
   removeProduct: (tenantSlug: string, productId: string, variantId?: string) => void;
   clearCart: (tenantSlug: string) => void;
   clearAllCarts: () => void;
@@ -27,7 +27,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   getCartByTenant: (tenantSlug) =>
     get().tenantCarts[tenantSlug] || { items: [] },
 
-  addProduct: (tenantSlug, productId, variantId) =>
+  addProduct: (tenantSlug, productId, variantId, variantName) =>
     set((state) => {
       const currentCart = state.tenantCarts[tenantSlug] || { items: [] };
 
@@ -44,7 +44,8 @@ export const useCartStore = create<CartState>((set, get) => ({
           [tenantSlug]: {
             items: [
               ...currentCart.items,
-              { productId, variantId },
+              // ✅ Store the name along with the IDs
+              { productId, variantId, variantName },
             ],
           },
         },
@@ -58,7 +59,6 @@ export const useCartStore = create<CartState>((set, get) => ({
         [tenantSlug]: {
           items: (state.tenantCarts[tenantSlug]?.items || []).filter(
             (item) => 
-              // Only remove the item if both the productId AND variantId match
               !(item.productId === productId && item.variantId === variantId)
           ),
         },

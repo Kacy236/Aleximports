@@ -8,7 +8,7 @@ import { generateTenantURL } from "@/lib/utils";
 
 /**
  * Checkout router
- * * Includes Variant-aware pricing and the full auto-subaccount creation logic.
+ * Includes Variant-aware pricing and the full auto-subaccount creation logic.
  */
 
 export const checkoutRouter = createTRPCRouter({
@@ -153,10 +153,10 @@ export const checkoutRouter = createTRPCRouter({
   purchase: protectedProcedure
     .input(
       z.object({
-        // ✅ Updated to accept objects for variant tracking
         cartItems: z.array(z.object({
           productId: z.string(),
-          variantId: z.string().optional()
+          variantId: z.string().optional(),
+          variantName: z.string().optional() // ✅ Added fix
         })).min(1),
         tenantSlug: z.string().min(1),
       })
@@ -268,7 +268,8 @@ export const checkoutRouter = createTRPCRouter({
           id: product.id,
           name: product.name,
           price: priceToCharge,
-          variantId: cartItem.variantId
+          variantId: cartItem.variantId,
+          variantName: cartItem.variantName // ✅ THE FIX: mapped from input
         } as any);
       }
 

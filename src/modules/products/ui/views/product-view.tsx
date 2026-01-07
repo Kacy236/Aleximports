@@ -378,13 +378,52 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
-          <div className="border rounded-sm bg-white overflow-hidden">
-              <div className="w-full h-[400px] bg-neutral-100 animate-pulse" />
-              <div className="p-6 space-y-4">
-                  <div className="h-10 w-1/3 bg-neutral-100 rounded animate-pulse" />
-                  <div className="h-20 w-full bg-neutral-100 rounded animate-pulse" />
-              </div>
-          </div>
+            <div className="border rounded-sm bg-white overflow-hidden">
+                {/* Image Placeholder Section */}
+                <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] bg-neutral-50 flex items-center justify-center border-b overflow-hidden">
+                    {/* Pulsing Placeholder Image */}
+                    <div className="relative size-40 md:size-64 opacity-20 animate-pulse">
+                        <Image
+                            src="/placeholder.png"
+                            alt="Loading..."
+                            fill
+                            className="object-contain grayscale"
+                        />
+                    </div>
+                    
+                    {/* Shimmer overlay effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-6">
+                    <div className="col-span-4 p-6 space-y-8">
+                        {/* Title Skeleton */}
+                        <div className="space-y-3">
+                            <div className="h-10 w-2/3 bg-neutral-100 rounded-md animate-pulse" />
+                            <div className="h-4 w-1/4 bg-neutral-50 rounded-md animate-pulse" />
+                        </div>
+                        
+                        {/* Details Bar Skeleton */}
+                        <div className="flex gap-4 border-y py-4">
+                            <div className="h-10 w-24 bg-neutral-100 rounded animate-pulse" />
+                            <div className="h-10 w-32 bg-neutral-100 rounded animate-pulse" />
+                        </div>
+
+                        {/* Description Skeleton */}
+                        <div className="space-y-4">
+                            <div className="h-4 w-full bg-neutral-50 rounded animate-pulse" />
+                            <div className="h-4 w-full bg-neutral-50 rounded animate-pulse" />
+                            <div className="h-4 w-3/4 bg-neutral-50 rounded animate-pulse" />
+                        </div>
+                    </div>
+
+                    {/* Sidebar Skeleton */}
+                    <div className="col-span-2 border-l border-neutral-100 p-6 space-y-6">
+                        <div className="h-12 w-full bg-neutral-100 rounded-md animate-pulse" />
+                        <div className="h-40 w-full bg-neutral-50 rounded-md animate-pulse" />
+                    </div>
+                </div>
+            </div>
         </div>
-    )
-}
+    );
+};
