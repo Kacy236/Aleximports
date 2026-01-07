@@ -193,7 +193,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                           className="rounded-full border shrink-0 size-[24px]"
                                         />
                                     )}
-                                    <p className="text-base font-medium underline underline-offset-4 decoration-neutral-300 group-hover/tenant:decoration-green-500 transition-colors">
+                                    <p className="text-base font-medium underline underline-offset-4 decoration-2 decoration-neutral-400 group-hover/tenant:decoration-green-600 transition-colors">
                                       {tenant?.name || "Store"}  
                                     </p>
                                 </Link>
@@ -359,7 +359,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                         <Progress 
                                             value={data.ratingDistribution?.[stars] ?? 0} 
                                             className="h-2 bg-neutral-100" 
-                                            // Make the bar green
                                         />
                                         <div className="font-medium text-sm text-neutral-400 w-8 text-right">
                                             {data.ratingDistribution?.[stars] ?? 0}%
