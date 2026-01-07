@@ -23,46 +23,59 @@ export const ProductCard = ({
     reviewCount,
 }: ProductCardProps) => {
     return (
-    <Link prefetch href={`/library/${id}`}>
-      <div className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col">
-          <div className="relative aspect-square">
-              <Image
-                alt={name}
-                fill
-                src={imageUrl || "/placeholder.png"}
-                className="object-cover"
-              />
-          </div>
-          <div className="p-4 border-y flex flex-col gap-3 flex-1">
-              <h2 className="text-lg font-medium line-clamp-4 ">{name}</h2>
-              <div className="flex items-center gap-2">
-                  {tenantImageUrl && (
-                      <Image 
-                        alt={tenantSlug}
-                        src={tenantImageUrl}
-                        width={16}
-                        height={16}
-                        className="rounded-full border shrink-0 size-[16px]"
-                      />
-                  )}
-                  <p className="text-sm underline font-medium">{tenantSlug}</p>
-              </div>
-              {reviewCount > 0 && (
-                  <div className="flex items-center gap-1">
-                      <StarIcon className="size-3.5 fill-black" />
-                      <p className="text-sm font-medium">
-                          {reviewRating} ({reviewCount})
-                      </p>
-                  </div>
-              )}
-          </div>
-      </div>
-    </Link>
-   )
-}
+        <Link prefetch href={`/library/${id}`} className="group">
+            <div className="hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-black rounded-xl bg-white overflow-hidden h-full flex flex-col">
+                <div className="relative aspect-square border-b-2 border-black">
+                    <Image
+                        alt={name}
+                        fill
+                        src={imageUrl || "/placeholder.png"}
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                </div>
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                    <h2 className="text-base font-bold line-clamp-2 leading-tight uppercase tracking-tight">
+                        {name}
+                    </h2>
+                    
+                    <div className="flex items-center gap-2 mt-1">
+                        {tenantImageUrl && (
+                            <div className="relative size-5 shrink-0">
+                                <Image 
+                                    alt={tenantSlug}
+                                    src={tenantImageUrl}
+                                    fill
+                                    className="rounded-full border border-black object-cover"
+                                />
+                            </div>
+                        )}
+                        <p className="text-xs font-bold underline decoration-1 underline-offset-2 opacity-70">
+                            {tenantSlug}
+                        </p>
+                    </div>
+
+                    {reviewCount > 0 && (
+                        <div className="flex items-center gap-1 mt-auto pt-2">
+                            <StarIcon className="size-3 fill-black" />
+                            <p className="text-[11px] font-black uppercase">
+                                {reviewRating.toFixed(1)} <span className="opacity-50">({reviewCount})</span>
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Link>
+    );
+};
 
 export const ProductCardSkeleton = () => {
     return (
-        <div className="w-full aspect-3/4 bg-neutral-200 rounded-lg animate-pulse"/>
-    )
-}
+        <div className="w-full aspect-square bg-neutral-100 border-2 border-neutral-200 rounded-xl animate-pulse flex flex-col">
+            <div className="flex-1 bg-neutral-200" />
+            <div className="p-4 space-y-2">
+                <div className="h-4 w-full bg-neutral-200 rounded" />
+                <div className="h-3 w-2/3 bg-neutral-200 rounded" />
+            </div>
+        </div>
+    );
+};

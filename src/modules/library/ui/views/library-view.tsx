@@ -26,31 +26,29 @@ export const LibraryView = () => {
             </nav>
 
             {/* HEADER SECTION */}
-            <header className="relative overflow-hidden bg-[#F4F4F0] border-b border-neutral-200">
-                {/* Decorative background element */}
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 opacity-5 pointer-events-none">
-                    <BookmarkIcon size={400} />
-                </div>
+<header className="relative overflow-hidden bg-[#F4F4F0] border-b border-neutral-200">
+    {/* Decorative background element - scaled down to match new height */}
+    <div className="absolute top-0 right-0 -translate-y-1/3 translate-x-1/4 opacity-5 pointer-events-none">
+        <BookmarkIcon size={240} />
+    </div>
 
-                <div className="max-w-(--breakpoint-xl) mx-auto px-4 lg:px-12 py-16 relative z-10">
-                    <div className="flex flex-col gap-y-3">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-green-600 p-2 rounded-lg shadow-sm">
-                                <ShoppingBagIcon className="size-6 text-white" />
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-widest text-green-700">Account Resources</span>
-                        </div>
-                        
-                        <h1 className="text-5xl lg:text-6xl font-medium tracking-tight text-neutral-900">
-                            Your <span className="text-green-600">Library</span>
-                        </h1>
-                        
-                        <p className="text-lg font-medium text-neutral-600 max-w-md leading-relaxed">
-                            Access all your digital purchases, track physical orders, and manage your product reviews in one place.
-                        </p>
-                    </div>
+    <div className="max-w-(--breakpoint-xl) mx-auto px-4 lg:px-12 py-8 relative z-10">
+        <div className="flex flex-col gap-y-2">
+            <div className="flex items-center gap-2">
+                <div className="bg-green-600 p-1.5 rounded-md shadow-sm">
+                    <ShoppingBagIcon className="size-4 text-white" />
                 </div>
-            </header>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-green-700">
+                    Account Resources
+                </span>
+            </div>
+            
+            <h1 className="text-3xl lg:text-4xl font-medium tracking-tight text-neutral-900">
+                Your <span className="text-green-600">Library</span>
+            </h1>
+        </div>
+    </div>
+</header>
 
             {/* CONTENT SECTION */}
             <main className="max-w-(--breakpoint-xl) mx-auto px-4 lg:px-12 py-12">
