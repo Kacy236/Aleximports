@@ -12,6 +12,7 @@ export const libraryRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      // 1. Find the successful order for this specific user and product
       const ordersData = await ctx.db.find({
         collection: "orders",
         limit: 1,
@@ -40,10 +41,11 @@ export const libraryRouter = createTRPCRouter({
         });
       }
 
+      // 2. Fetch the full product details (depth 2 to get Media/Tenant info)
       const product = await ctx.db.findByID({
         collection: "products",
         id: input.productId,
-        depth: 2, 
+        depth: 2,
       });
 
       if (!product) {
@@ -53,7 +55,33 @@ export const libraryRouter = createTRPCRouter({
         });
       }
 
-      return product;
+      /**
+       * ✅ FIX: VARIANT DETECTION
+       * We look into the order to find the specific variant name.
+       * This assumes your order stores a 'selectedVariantId' or similar 
+       * inside an items array.
+       */
+      let purchasedVariantName: string | null = null;
+
+      // Find the item in the order that matches this product ID
+      const orderItem = (order as any).items?.find(
+        (item: any) => 
+          (typeof item.product === 'object' ? item.product.id : item.product) === input.productId
+      );
+
+      // If a variant was recorded in the order, find its label in the product
+      if (orderItem?.variantId && product.hasVariants && product.variants) {
+        const variant = product.variants.find((v: any) => v.id === orderItem.variantId);
+        if (variant) {
+          const parts = [variant.color, variant.size].filter(Boolean);
+          purchasedVariantName = parts.length > 0 ? parts.join(" / ") : null;
+        }
+      }
+
+      return {
+        ...product,
+        purchasedVariant: purchasedVariantName, // e.g., "Blue / XL"
+      };
     }),
 
   getMany: protectedProcedure
@@ -70,7 +98,7 @@ export const libraryRouter = createTRPCRouter({
       const ordersData = await ctx.db.find({
         collection: "orders",
         depth: 0,
-        page: pageNumber, // 👈 Use the safe variable here
+        page: pageNumber,
         limit: input.limit,
         where: {
           and: [
@@ -84,13 +112,15 @@ export const libraryRouter = createTRPCRouter({
         },
       });
 
+      // Extract all product IDs from the user's successful orders
       const productIds = ordersData.docs.flatMap((order: any) => order.products || []);
       const uniqueProductIds = [...new Set(productIds)];
 
+      // Fetch the products based on those IDs
       const productsData = await ctx.db.find({
         collection: "products",
         pagination: false,
-        depth: 2, 
+        depth: 2,
         where: {
           id: {
             in: uniqueProductIds,
@@ -98,6 +128,7 @@ export const libraryRouter = createTRPCRouter({
         },
       });
 
+      // Attach review summaries to each product for the library list view
       const dataWithSummarizedReviews = await Promise.all(
         productsData.docs.map(async (doc) => {
           const reviewsData = await ctx.db.find({
@@ -116,10 +147,10 @@ export const libraryRouter = createTRPCRouter({
             reviewRating:
               reviewsData.docs.length === 0
                 ? 0
-                : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) / reviewsData.totalDocs
-          }
+                : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) / reviewsData.totalDocs,
+          };
         })
-      )
+      );
 
       return {
         totalDocs: productsData.totalDocs,
@@ -128,7 +159,7 @@ export const libraryRouter = createTRPCRouter({
         hasNextPage: ordersData.hasNextPage,
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
-          images: doc.images, 
+          images: doc.images,
           tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };

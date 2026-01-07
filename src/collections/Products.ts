@@ -68,7 +68,7 @@ export const Products: CollectionConfig = {
     {
       name: "hasVariants",
       type: "checkbox",
-      label: "This product has multiple variants (e.g., different sizes or colors)",
+      label: "This product has multiple options (like different sizes, colors, or materials)",
       defaultValue: false,
       admin: {
         position: 'sidebar',
