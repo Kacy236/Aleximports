@@ -97,6 +97,30 @@ export const Products: CollectionConfig = {
     },
 
     // =========================
+    // PRODUCT IMAGES
+    // =========================
+    {
+      name: "images",
+      required: true,
+      label: "Product Image",
+      type: "array",
+      minRows: 1,
+      maxRows: 8,
+      admin: {
+        description:
+          "Upload your product image or images. The first image will be the primary image.",
+      },
+      fields: [
+        {
+          name: "image",
+          type: "upload",
+          relationTo: "media",
+          required: true,
+        },
+      ],
+    },
+    
+    // =========================
     // VARIANTS (MOVED UP)
     // =========================
     {
@@ -158,32 +182,6 @@ export const Products: CollectionConfig = {
               admin: { width: "30%" },
             },
           ],
-        },
-      ],
-    },
-
-
-
-    // =========================
-    // PRODUCT IMAGES
-    // =========================
-    {
-      name: "images",
-      required: true,
-      label: "Product Image",
-      type: "array",
-      minRows: 1,
-      maxRows: 8,
-      admin: {
-        description:
-          "Upload your product image or images. The first image will be the primary image.",
-      },
-      fields: [
-        {
-          name: "image",
-          type: "upload",
-          relationTo: "media",
-          required: true,
         },
       ],
     },
