@@ -3,10 +3,10 @@
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState, useMemo, Fragment, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -41,44 +41,57 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    // --- NEW VARIANT STATES ---
+    // --- VARIANT STATES ---
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
     const images = useMemo(() => data?.images || [], [data?.images]);
 
-    // --- DERIVE UNIQUE COLORS & SIZES FROM VARIANTS ---
-    const uniqueColors = useMemo(() => {
-        if (!data.hasVariants || !data.variants) return [];
+    // --- 1. GET ALL UNIQUE OPTIONS (The full list of buttons) ---
+    const allPossibleColors = useMemo(() => {
+        if (!data?.hasVariants || !data?.variants) return [];
         const colors = data.variants.map((v: any) => v.color).filter(Boolean);
         return Array.from(new Set(colors)) as string[];
-    }, [data.variants, data.hasVariants]);
+    }, [data?.variants, data?.hasVariants]);
 
-    const uniqueSizes = useMemo(() => {
-        if (!data.hasVariants || !data.variants) return [];
+    const allPossibleSizes = useMemo(() => {
+        if (!data?.hasVariants || !data?.variants) return [];
         const sizes = data.variants.map((v: any) => v.size).filter(Boolean);
         return Array.from(new Set(sizes)) as string[];
-    }, [data.variants, data.hasVariants]);
+    }, [data?.variants, data?.hasVariants]);
 
-    // --- FIND THE CURRENTLY SELECTED VARIANT ---
+    // --- 2. CALCULATE WHICH OPTIONS ARE VALID BASED ON THE OTHER SELECTION ---
+    const availableColors = useMemo(() => {
+        if (!selectedSize) return allPossibleColors;
+        return data?.variants
+            ?.filter((v: any) => v.size === selectedSize)
+            .map((v: any) => v.color) || [];
+    }, [selectedSize, data?.variants, allPossibleColors]);
+
+    const availableSizes = useMemo(() => {
+        if (!selectedColor) return allPossibleSizes;
+        return data?.variants
+            ?.filter((v: any) => v.color === selectedColor)
+            .map((v: any) => v.size) || [];
+    }, [selectedColor, data?.variants, allPossibleSizes]);
+
+    // --- 3. FIND THE CURRENTLY SELECTED VARIANT OBJECT ---
     const activeVariant = useMemo(() => {
-        if (!data.hasVariants || !data.variants) return null;
+        if (!data?.hasVariants || !data?.variants) return null;
+        
         return data.variants.find((v: any) => {
             const colorMatch = selectedColor ? v.color === selectedColor : true;
             const sizeMatch = selectedSize ? v.size === selectedSize : true;
             return colorMatch && sizeMatch;
         });
-    }, [data.variants, data.hasVariants, selectedColor, selectedSize]);
+    }, [data?.variants, data?.hasVariants, selectedColor, selectedSize]);
 
-    // --- UPDATED IMAGE LOGIC TO SUPPORT VARIANT IMAGES ---
+    // --- IMAGE LOGIC ---
     const currentDisplayImage = useMemo(() => {
         if (!data) return "/placeholder.png";
-
-        // 1. If a variant is selected and has a specific image, show that first
         const variantImg = activeVariant?.variantImage as Media | undefined;
         if (variantImg?.url) return variantImg.url;
 
-        // 2. Otherwise fall back to the main carousel
         if (images.length === 0) return "/placeholder.png";
         const imgObj = images[selectedImageIndex]?.image;
         if (imgObj && typeof imgObj === "object" && "url" in imgObj && imgObj.url) {
@@ -87,11 +100,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return "/placeholder.png";
     }, [data, images, selectedImageIndex, activeVariant]);
 
-    // --- DYNAMIC PRICE LOGIC ---
+    // --- PRICE LOGIC ---
     const currentPrice = useMemo(() => {
         if (activeVariant?.variantPrice) return activeVariant.variantPrice;
-        return data.price || 0;
-    }, [activeVariant, data.price]);
+        return data?.price || 0;
+    }, [activeVariant, data?.price]);
 
     const tenant = data?.tenant as Tenant | undefined;
     const tenantImage = tenant?.image as Media | undefined;
@@ -132,7 +145,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
-                                aria-label="Previous image"
                             >
                                 <ChevronLeft className="size-5 sm:size-6" />
                             </button>
@@ -145,7 +157,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     "active:scale-90 active:bg-green-500 active:text-white active:border-green-600",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:border-green-500/20 lg:hover:text-green-600"
                                 )}
-                                aria-label="Next image"
                             >
                                 <ChevronRight className="size-5 sm:size-6" />
                             </button>
@@ -201,59 +212,84 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
                         </div>
 
-                        {/* --- VARIANT SELECTION UI --- */}
+                        {/* --- VARIANT SELECTION --- */}
                         {data.hasVariants && (
                             <div className="p-6 border-b space-y-6 bg-neutral-50/50">
-                                {uniqueColors.length > 0 && (
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Selection</h3>
+                                    {(selectedColor || selectedSize) && (
+                                        <button 
+                                            onClick={() => { setSelectedColor(null); setSelectedSize(null); }}
+                                            className="text-xs flex items-center gap-1 text-red-500 hover:underline font-medium"
+                                        >
+                                            <X size={12}/> Clear Selection
+                                        </button>
+                                    )}
+                                </div>
+
+                                {allPossibleColors.length > 0 && (
                                     <div className="space-y-3">
-                                        <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Select Color</h3>
+                                        <h3 className="text-sm font-medium text-neutral-700">Select Color</h3>
                                         <div className="flex flex-wrap gap-2">
-                                            {uniqueColors.map((color) => (
-                                                <button
-                                                    key={color}
-                                                    onClick={() => setSelectedColor(color === selectedColor ? null : color)}
-                                                    className={cn(
-                                                        "px-4 py-2 border rounded-md font-medium transition-all",
-                                                        selectedColor === color 
-                                                            ? "bg-black text-white border-black" 
-                                                            : "bg-white text-neutral-900 hover:border-black"
-                                                    )}
-                                                >
-                                                    {color}
-                                                </button>
-                                            ))}
+                                            {allPossibleColors.map((color) => {
+                                                const isAvailable = availableColors.includes(color);
+                                                return (
+                                                    <button
+                                                        key={color}
+                                                        disabled={!isAvailable}
+                                                        onClick={() => setSelectedColor(color === selectedColor ? null : color)}
+                                                        className={cn(
+                                                            "px-4 py-2 border rounded-md font-medium transition-all",
+                                                            selectedColor === color 
+                                                                ? "bg-black text-white border-black" 
+                                                                : "bg-white text-neutral-900 hover:border-black",
+                                                            !isAvailable && "opacity-20 cursor-not-allowed border-dashed"
+                                                        )}
+                                                    >
+                                                        {color}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
 
-                                {uniqueSizes.length > 0 && (
+                                {allPossibleSizes.length > 0 && (
                                     <div className="space-y-3">
-                                        <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Select Size</h3>
+                                        <h3 className="text-sm font-medium text-neutral-700">Select Size</h3>
                                         <div className="flex flex-wrap gap-2">
-                                            {uniqueSizes.map((size) => (
-                                                <button
-                                                    key={size}
-                                                    onClick={() => setSelectedSize(size === selectedSize ? null : size)}
-                                                    className={cn(
-                                                        "px-4 py-2 border rounded-md font-medium transition-all",
-                                                        selectedSize === size 
-                                                            ? "bg-black text-white border-black" 
-                                                            : "bg-white text-neutral-900 hover:border-black"
-                                                    )}
-                                                >
-                                                    {size}
-                                                </button>
-                                            ))}
+                                            {allPossibleSizes.map((size) => {
+                                                const isAvailable = availableSizes.includes(size);
+                                                return (
+                                                    <button
+                                                        key={size}
+                                                        disabled={!isAvailable}
+                                                        onClick={() => setSelectedSize(size === selectedSize ? null : size)}
+                                                        className={cn(
+                                                            "px-4 py-2 border rounded-md font-medium transition-all",
+                                                            selectedSize === size 
+                                                                ? "bg-black text-white border-black" 
+                                                                : "bg-white text-neutral-900 hover:border-black",
+                                                            !isAvailable && "opacity-20 cursor-not-allowed border-dashed"
+                                                        )}
+                                                    >
+                                                        {size}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
                                 
                                 {activeVariant && (
-                                    <p className="text-sm font-medium text-green-600">
+                                    <div className={cn(
+                                        "p-3 rounded-md text-sm font-medium",
+                                        activeVariant.stock > 0 ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+                                    )}>
                                         {activeVariant.stock > 0 
-                                            ? `In Stock (${activeVariant.stock} units left)` 
-                                            : "Currently out of stock for this selection"}
-                                    </p>
+                                            ? `✓ In Stock (${activeVariant.stock} available)` 
+                                            : "✕ Selection out of stock"}
+                                    </div>
                                 )}
                             </div>
                         )}
@@ -262,9 +298,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             {data.description ? (
                                 <RichText data={data.description}/>
                             ): (
-                                <p className="font-medium text-muted-foreground italic">
-                                    No description provided
-                                </p>
+                                <p className="font-medium text-muted-foreground italic">No description provided</p>
                             )}
                         </div>
                     </div>
@@ -276,52 +310,43 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                       <CartButton
                                         productId={productId}
                                         tenantSlug={tenantSlug}
-                                        // Pass the specific variant to the cart if selected
                                         variantId={activeVariant?.id} 
+                                        disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
                                       />
-                                    <Button
-                                      className="size-12"
-                                      variant="elevated"
+                                    <button
+                                      className={cn(
+                                        "size-12 flex items-center justify-center border rounded-md transition-all shadow-sm",
+                                        isCopied ? "bg-green-500 text-white border-green-600" : "bg-white hover:bg-neutral-50"
+                                      )}
                                       onClick={() => {
                                           setIsCopied(true);
                                           navigator.clipboard.writeText(window.location.href);
-                                          toast.success("URL copied to clipboard")
-                                          setTimeout(() => setIsCopied(false), 1000);
+                                          toast.success("URL copied!")
+                                          setTimeout(() => setIsCopied(false), 2000);
                                       }}
-                                      disabled={isCopied}
                                     >
-                                        {isCopied ? <CheckIcon/> : <LinkIcon />}
-                                    </Button>
+                                        {isCopied ? <CheckIcon className="size-5"/> : <LinkIcon className="size-5" />}
+                                    </button>
                                 </div>
-
                                 <p className="text-center font-medium">
-                                    {data.refundPolicy === "no-refunds"
-                                      ? "No refunds"
-                                      : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} money back guarantee`
-                                    }
+                                    {data.refundPolicy === "no-refunds" ? "No refunds" : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} guarantee`}
                                 </p>
                             </div>
 
                             <div className="p-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-xl font-medium">Ratings</h3>
-                                    <div className="flex items-center gap-x-1 font-medium">
+                                    <div className="flex items-center gap-x-1 font-medium text-base">
                                         <StarIcon className="size-4 fill-black" />
-                                        <p>({(data.reviewRating ?? 0).toFixed(1)})</p>
-                                        <p className="text-base">{data.reviewCount ?? 0} ratings</p>
+                                        <p>({(data.reviewRating ?? 0).toFixed(1)}) {data.reviewCount ?? 0} ratings</p>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4">
                                 {[5, 4, 3, 2, 1].map((stars) => (
                                     <Fragment key={stars}>
-                                        <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
-                                        <Progress 
-                                          value={data.ratingDistribution?.[stars] ?? 0}
-                                          className="h-[1lh]"
-                                        />
-                                        <div className="font-medium">
-                                            {data.ratingDistribution?.[stars] ?? 0}%
-                                        </div>
+                                        <div className="font-medium text-sm">{stars} stars</div>
+                                        <Progress value={data.ratingDistribution?.[stars] ?? 0} className="h-4" />
+                                        <div className="font-medium text-sm">{data.ratingDistribution?.[stars] ?? 0}%</div>
                                     </Fragment>
                                 ))}
                                 </div>
@@ -338,9 +363,7 @@ export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
           <div className="border rounded-sm bg-white overflow-hidden">
-              <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] border-b bg-neutral-100 animate-pulse flex items-center justify-center">
-                  <Image src="/placeholder.png" alt="Loading" fill className="object-contain opacity-50" />
-              </div>
+              <div className="w-full h-[400px] bg-neutral-100 animate-pulse" />
               <div className="p-6 space-y-4">
                   <div className="h-10 w-1/3 bg-neutral-100 rounded animate-pulse" />
                   <div className="h-20 w-full bg-neutral-100 rounded animate-pulse" />
