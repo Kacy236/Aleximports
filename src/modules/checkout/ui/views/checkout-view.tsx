@@ -3,17 +3,16 @@
 import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { InboxIcon, LoaderIcon } from "lucide-react";
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 import { useCart } from "../../hooks/use-cart";
 import { generateTenantURL } from "@/lib/utils";
 import { CheckoutItem } from "../components/checkout-item";
 import { CheckoutSidebar } from "../components/checkout-sidebar";
 import { useCheckoutStates } from "../../hooks/use-checkout-states";
-import { useRouter } from "next/navigation";
-import { Media } from "@/payload-types";
+import { Media, Product } from "@/payload-types";
 
 interface CheckoutViewProps {
     tenantSlug: string;
@@ -22,14 +21,19 @@ interface CheckoutViewProps {
 export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     const router = useRouter();
     const [states, setStates] = useCheckoutStates();
-    const { productIds, removeProduct, clearCart } = useCart(tenantSlug);
+    
+    // items is now [{ productId, variantId }, ...]
+    const { items, removeProduct, clearCart } = useCart(tenantSlug);
 
     const trpc = useTRPC();
     const queryClient = useQueryClient();
     
+    // Extract unique IDs for the query
+    const flatIds = useMemo(() => items.map(i => i.productId), [items]);
+
     const { data, error, isLoading } = useQuery(
         trpc.checkout.getProducts.queryOptions({
-            ids: productIds,
+            ids: flatIds,
         })
     );
 
@@ -43,7 +47,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
             },
             onError: (error) => {
                 if (error.data?.code === "UNAUTHORIZED") {
-                    // Ensure this URL is correct for your production environment
                     window.location.href = "https://aleximportsshop.store/sign-in";
                     return;
                 }
@@ -52,14 +55,32 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         })
     );
 
+    /**
+     * ✅ DYNAMIC TOTAL CALCULATION
+     * Matches the specific variant price if a variantId exists in the cart item
+     */
     const totalAmount = useMemo(() => {
-        return (
-            data?.docs.reduce(
-                (acc, product) => acc + (Number(product.price) || 0),
-                0
-            ) || 0
-        );
-    }, [data?.docs]);
+        if (!data?.docs || items.length === 0) return 0;
+
+        return items.reduce((acc, cartItem) => {
+            const product = data.docs.find((p) => p.id === cartItem.productId);
+            if (!product) return acc;
+
+            let price = Number(product.price || 0);
+
+            // If user picked a variant, check for a price override
+            if (cartItem.variantId && product.hasVariants) {
+                const variant = (product as any).variants?.find(
+                    (v: any) => v.id === cartItem.variantId
+                );
+                if (variant?.variantPrice) {
+                    price = Number(variant.variantPrice);
+                }
+            }
+            
+            return acc + price;
+        }, 0);
+    }, [data?.docs, items]);
 
     useEffect(() => {
         if (states.success) {
@@ -70,14 +91,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
             );
             router.push("/library");
         }
-    }, [
-        states.success,
-        clearCart,
-        router,
-        setStates,
-        queryClient,
-        trpc.library.getMany,
-    ]);
+    }, [states.success, clearCart, router, setStates, queryClient, trpc.library]);
 
     useEffect(() => {
         if (error?.data?.code === "NOT_FOUND") {
@@ -96,7 +110,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         );
     }
 
-    if (!data || !data.docs || data.docs.length === 0) {
+    if (!data || !data.docs || items.length === 0) {
         return (
             <div className="lg:pt-16 pt-4 px-4 lg:px-12">
                 <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
@@ -110,26 +124,35 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     return (
         <div className="lg:pt-16 pt-4 px-4 lg:px-12">
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-4 lg:gap-16">
-
                 <div className="lg:col-span-4">
                     <div className="border rounded-md overflow-hidden bg-white">
-                        {data.docs.map((product, index) => {
-                            // ✅ THE FIX: Extract the first image for the checkout item thumbnail
+                        {items.map((cartItem, index) => {
+                            // Find product data for this cart item
+                            const product = data.docs.find(p => p.id === cartItem.productId);
+                            if (!product) return null;
+
                             const firstImageRow = product.images?.[0];
                             const imageObject = firstImageRow?.image as Media | undefined;
-                            const imageUrl = imageObject?.url;
+                            
+                            // Determine display price (variant vs base)
+                            let displayPrice = product.price;
+                            if (cartItem.variantId && product.hasVariants) {
+                                const variant = (product as any).variants?.find((v: any) => v.id === cartItem.variantId);
+                                if (variant?.variantPrice) displayPrice = variant.variantPrice;
+                            }
 
                             return (
                                 <CheckoutItem
-                                    key={product.id}
-                                    isLast={index === data.docs.length - 1}
-                                    imageUrl={imageUrl} // Updated to use the first image from array
+                                    key={`${cartItem.productId}-${cartItem.variantId}`}
+                                    isLast={index === items.length - 1}
+                                    imageUrl={imageObject?.url}
                                     name={product.name}
                                     productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
                                     tenantUrl={generateTenantURL(product.tenant.slug)}
                                     tenantName={product.tenant.name}
-                                    price={product.price}
-                                    onRemove={() => removeProduct(product.id)}
+                                    price={displayPrice}
+                                    // Match new removeProduct signature
+                                    onRemove={() => removeProduct(cartItem.productId, cartItem.variantId)}
                                 />
                             );
                         })}
@@ -139,12 +162,15 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 <div className="lg:col-span-3">
                     <CheckoutSidebar
                         total={totalAmount} 
-                        onPurchase={() => purchase.mutate({ tenantSlug, productIds })}
+                        // ✅ Updated to send cartItems (array of objects) instead of productIds (array of strings)
+                        onPurchase={() => purchase.mutate({ 
+                            tenantSlug, 
+                            cartItems: items.map(i => ({ productId: i.productId, variantId: i.variantId })) 
+                        })}
                         isCanceled={states.cancel}
                         disabled={purchase.isPending}
                     />
                 </div>
-                
             </div>
         </div>
     );

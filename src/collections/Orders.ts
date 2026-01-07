@@ -1,54 +1,45 @@
 import { isSuperAdmin } from "@/lib/access";
 import type { CollectionConfig } from "payload";
 
+/**
+ * Orders Collection
+ * Stores transaction history and line items (variants) for each purchase.
+ */
+
 export const Orders: CollectionConfig = {
   slug: "orders",
-
   access: {
-    // ✅ READ
+    // ✅ READ: Admins see all, users see their own
     read: ({ req }) => {
       const user = req.user;
       if (!user) return false;
-
-      // ✅ Super admins can see all orders
-      if (isSuperAdmin(user)) {
-        return true;
-      }
-
-      // ✅ Regular users can only see their own orders
-      return {
-        user: {
-          equals: user.id,
-        },
-      };
+      if (isSuperAdmin(user)) return true;
+      return { user: { equals: user.id } };
     },
-
-    // ✅ CREATE (SuperAdmins only)
+    // ✅ WRITE: Restricted to Admin/System processes (like Webhooks)
     create: ({ req }) => isSuperAdmin(req.user),
-
-    // ✅ UPDATE (SuperAdmins only)
     update: ({ req }) => isSuperAdmin(req.user),
-
-    // ✅ DELETE (SuperAdmins only)
     delete: ({ req }) => isSuperAdmin(req.user),
   },
-
   admin: {
     useAsTitle: "paystackReference",
+    defaultColumns: ["paystackReference", "totalAmount", "status", "createdAt"],
+    group: "Shop",
   },
-
   fields: [
     {
       name: "tenant",
       type: "relationship",
       relationTo: "tenants",
       required: true,
+      index: true,
     },
     {
       name: "user",
       type: "relationship",
       relationTo: "users",
       required: true,
+      index: true,
     },
     {
       name: "products",
@@ -56,20 +47,31 @@ export const Orders: CollectionConfig = {
       relationTo: "products",
       hasMany: true,
       required: true,
+      admin: {
+        description: "Primary product relationships",
+      },
     },
     {
-      name: "productNames",
+      name: "items", 
       type: "array",
+      admin: {
+        description: "Snapshots of products, variants, and prices at time of purchase",
+      },
       fields: [
         {
-          name: "name",
+          name: "productName",
           type: "text",
           required: true,
         },
+        {
+          name: "variantId", 
+          type: "text",
+        },
+        {
+          name: "priceAtPurchase", 
+          type: "number",
+        },
       ],
-      admin: {
-        description: "List of product names for display or analytics",
-      },
     },
     {
       name: "paystackReference",
@@ -77,14 +79,16 @@ export const Orders: CollectionConfig = {
       required: true,
       unique: true,
       admin: {
-        description: "Paystack transaction reference",
+        position: "sidebar",
       },
     },
     {
+      // ✅ THE FIX: Added this field so Webhook 'paystackTransactionId' works
       name: "paystackTransactionId",
       type: "text",
       admin: {
-        description: "Optional: Paystack Transaction ID (for reconciliation)",
+        position: "sidebar",
+        description: "The internal Paystack ID for this transaction",
       },
     },
     {
@@ -97,13 +101,16 @@ export const Orders: CollectionConfig = {
       ],
       defaultValue: "pending",
       required: true,
+      admin: {
+        position: "sidebar",
+      },
     },
     {
       name: "totalAmount",
       type: "number",
       required: true,
       admin: {
-        description: "Total amount paid (in Naira)",
+        description: "Total amount paid in Naira",
       },
     },
   ],

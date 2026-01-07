@@ -252,30 +252,30 @@ export interface Product {
     [k: string]: unknown;
   };
   /**
-   * Price in Nigerian Naira (₦).
+   * The default price if no variant price is set.
    */
   price: number;
-  /**
-   * Select a subcategory (not a parent category)
-   */
-  category: string | Category;
-  tags?: (string | Tag)[] | null;
-  /**
-   * Upload one or more product images. The first image will be used as the thumbnail.
-   */
-  images?:
+  hasVariants?: boolean | null;
+  variants?:
     | {
-        image: string | Media;
+        color?: string | null;
+        size?: string | null;
+        /**
+         * Leave empty to use base price.
+         */
+        variantPrice?: number | null;
+        stock: number;
+        variantImage?: (string | null) | Media;
         id?: string | null;
       }[]
     | null;
-  /**
-   * Choose the refund policy for this product.
-   */
+  category: string | Category;
+  tags?: (string | Tag)[] | null;
+  images: {
+    image: string | Media;
+    id?: string | null;
+  }[];
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
-  /**
-   * Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).
-   */
   content?: {
     root: {
       type: string;
@@ -291,13 +291,7 @@ export interface Product {
     };
     [k: string]: unknown;
   } | null;
-  /**
-   * If checked, this product will not be shown on the public storefront
-   */
   isPrivate?: boolean | null;
-  /**
-   * If checked, this product will be archived
-   */
   isArchived?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -321,27 +315,29 @@ export interface Order {
   id: string;
   tenant: string | Tenant;
   user: string | User;
+  /**
+   * Primary product relationships
+   */
   products: (string | Product)[];
   /**
-   * List of product names for display or analytics
+   * Snapshots of products, variants, and prices at time of purchase
    */
-  productNames?:
+  items?:
     | {
-        name: string;
+        productName: string;
+        variantId?: string | null;
+        priceAtPurchase?: number | null;
         id?: string | null;
       }[]
     | null;
-  /**
-   * Paystack transaction reference
-   */
   paystackReference: string;
   /**
-   * Optional: Paystack Transaction ID (for reconciliation)
+   * The internal Paystack ID for this transaction
    */
   paystackTransactionId?: string | null;
   status: 'pending' | 'success' | 'failed';
   /**
-   * Total amount paid (in Naira)
+   * Total amount paid in Naira
    */
   totalAmount: number;
   updatedAt: string;
@@ -511,6 +507,17 @@ export interface ProductsSelect<T extends boolean = true> {
   name?: T;
   description?: T;
   price?: T;
+  hasVariants?: T;
+  variants?:
+    | T
+    | {
+        color?: T;
+        size?: T;
+        variantPrice?: T;
+        stock?: T;
+        variantImage?: T;
+        id?: T;
+      };
   category?: T;
   tags?: T;
   images?:
@@ -562,10 +569,12 @@ export interface OrdersSelect<T extends boolean = true> {
   tenant?: T;
   user?: T;
   products?: T;
-  productNames?:
+  items?:
     | T
     | {
-        name?: T;
+        productName?: T;
+        variantId?: T;
+        priceAtPurchase?: T;
         id?: T;
       };
   paystackReference?: T;

@@ -7,19 +7,15 @@ export const Products: CollectionConfig = {
 
   access: {
     create: async ({ req }) => {
-      // ✅ Super admin can always create
       if (isSuperAdmin(req.user)) return true;
 
-      // ✅ Handle tenant being an object or a string
       const tenantRel = req.user?.tenants?.[0]?.tenant;
       const tenantId =
         typeof tenantRel === "object"
           ? (tenantRel as any).id || (tenantRel as any)._id
           : tenantRel;
 
-      if (!tenantId) {
-        return false;
-      }
+      if (!tenantId) return false;
 
       let tenant: Tenant | null = null;
       try {
@@ -32,21 +28,16 @@ export const Products: CollectionConfig = {
         return false;
       }
 
-      // ✅ Tenant must have a Paystack subaccount code to create products
       return Boolean(tenant?.paystackSubaccountCode);
     },
     delete: ({ req }) => isSuperAdmin(req.user),
-    // Added read access to ensure users can see the products they have access to
     read: () => true, 
   },
 
   admin: {
     useAsTitle: "name",
-    // ✅ CRITICAL FIX: Explicitly define columns to exclude the 'images' array.
-    // This stops the Admin UI from crashing when it hits old single-image data.
     defaultColumns: ["name", "price", "category", "updatedAt"],
-    description:
-      "You must complete your Paystack verification (subaccount) before creating products.",
+    description: "You must complete your Paystack verification (subaccount) before creating products.",
   },
 
   fields: [
@@ -68,10 +59,76 @@ export const Products: CollectionConfig = {
       name: "price",
       type: "number",
       required: true,
+      label: "Base Price (₦)",
       admin: {
-        description: "Price in Nigerian Naira (₦).",
+        description: "The default price if no variant price is set.",
       },
     },
+    // --- VARIANTS SECTION ---
+    {
+      name: "hasVariants",
+      type: "checkbox",
+      label: "This product has multiple variants (e.g., different sizes or colors)",
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
+      name: "variants",
+      type: "array",
+      label: "Product Variants",
+      admin: {
+        condition: (data) => data?.hasVariants,
+      },
+      fields: [
+        {
+          type: "row",
+          fields: [
+            {
+              name: "color",
+              type: "text",
+              label: "Color (e.g. Red, Blue, Leather)",
+              admin: { width: "50%" },
+            },
+            {
+              name: "size",
+              type: "text",
+              label: "Size (e.g. XL, 42, 10-inch)",
+              admin: { width: "50%" },
+            },
+          ],
+        },
+        {
+          type: "row",
+          fields: [
+            {
+              name: "variantPrice",
+              type: "number",
+              label: "Variant Price (₦)",
+              admin: { 
+                width: "50%",
+                description: "Leave empty to use base price." 
+              },
+            },
+            {
+              name: "stock",
+              type: "number",
+              label: "Stock Quantity",
+              required: true,
+              admin: { width: "50%" },
+            },
+          ],
+        },
+        {
+          name: "variantImage",
+          type: "upload",
+          relationTo: "media",
+          label: "Variant Image",
+        },
+      ],
+    },
+    // --- END VARIANTS SECTION ---
     {
       name: "category",
       type: "relationship",
@@ -79,12 +136,7 @@ export const Products: CollectionConfig = {
       required: true,
       hasMany: false,
       filterOptions: {
-        parent: {
-          exists: true,
-        },
-      },
-      admin: {
-        description: "Select a subcategory (not a parent category)",
+        parent: { exists: true },
       },
     },
     {
@@ -99,9 +151,6 @@ export const Products: CollectionConfig = {
       required: true,
       type: "array",
       minRows: 1,
-      admin: {
-        description: "Upload one or more product images. The first image will be used as the thumbnail.",
-      },
       fields: [
         {
           name: "image",
@@ -123,35 +172,22 @@ export const Products: CollectionConfig = {
         { label: "No refunds", value: "no-refunds" },
       ],
       defaultValue: "30-day",
-      admin: {
-        description: "Choose the refund policy for this product.",
-      },
     },
     {
       name: "content",
       type: "richText",
-      admin: {
-        description:
-          "Protected content visible only after purchase. Supports markdown formatting (add guides, downloads, or bonuses).",
-      },
     },
     {
       name: "isPrivate",
       label: "Private",
       defaultValue: false,
       type: "checkbox",
-      admin: {
-        description: "If checked, this product will not be shown on the public storefront",
-      },
     },
     {
       name: "isArchived",
       label: "Archive",
       defaultValue: false,
       type: "checkbox",
-      admin: {
-        description: "If checked, this product will be archived",
-      },
     },
   ],
 };

@@ -36,25 +36,62 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     }, []);
 
     const trpc = useTRPC();
-    // useSuspenseQuery handles the "loading" state by throwing a promise caught by a parent Suspense boundary
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
 
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
+    // --- NEW VARIANT STATES ---
+    const [selectedColor, setSelectedColor] = useState<string | null>(null);
+    const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
     const images = useMemo(() => data?.images || [], [data?.images]);
-    
-    // --- UPDATED IMAGE LOGIC ---
-    // If no data/images yet, use placeholder. Otherwise, use the selected index.
+
+    // --- DERIVE UNIQUE COLORS & SIZES FROM VARIANTS ---
+    const uniqueColors = useMemo(() => {
+        if (!data.hasVariants || !data.variants) return [];
+        const colors = data.variants.map((v: any) => v.color).filter(Boolean);
+        return Array.from(new Set(colors)) as string[];
+    }, [data.variants, data.hasVariants]);
+
+    const uniqueSizes = useMemo(() => {
+        if (!data.hasVariants || !data.variants) return [];
+        const sizes = data.variants.map((v: any) => v.size).filter(Boolean);
+        return Array.from(new Set(sizes)) as string[];
+    }, [data.variants, data.hasVariants]);
+
+    // --- FIND THE CURRENTLY SELECTED VARIANT ---
+    const activeVariant = useMemo(() => {
+        if (!data.hasVariants || !data.variants) return null;
+        return data.variants.find((v: any) => {
+            const colorMatch = selectedColor ? v.color === selectedColor : true;
+            const sizeMatch = selectedSize ? v.size === selectedSize : true;
+            return colorMatch && sizeMatch;
+        });
+    }, [data.variants, data.hasVariants, selectedColor, selectedSize]);
+
+    // --- UPDATED IMAGE LOGIC TO SUPPORT VARIANT IMAGES ---
     const currentDisplayImage = useMemo(() => {
-        if (!data || images.length === 0) return "/placeholder.png";
-        
+        if (!data) return "/placeholder.png";
+
+        // 1. If a variant is selected and has a specific image, show that first
+        const variantImg = activeVariant?.variantImage as Media | undefined;
+        if (variantImg?.url) return variantImg.url;
+
+        // 2. Otherwise fall back to the main carousel
+        if (images.length === 0) return "/placeholder.png";
         const imgObj = images[selectedImageIndex]?.image;
         if (imgObj && typeof imgObj === "object" && "url" in imgObj && imgObj.url) {
             return imgObj.url;
         }
         return "/placeholder.png";
-    }, [data, images, selectedImageIndex]);
+    }, [data, images, selectedImageIndex, activeVariant]);
+
+    // --- DYNAMIC PRICE LOGIC ---
+    const currentPrice = useMemo(() => {
+        if (activeVariant?.variantPrice) return activeVariant.variantPrice;
+        return data.price || 0;
+    }, [activeVariant, data.price]);
 
     const tenant = data?.tenant as Tenant | undefined;
     const tenantImage = tenant?.image as Media | undefined;
@@ -76,7 +113,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
                 <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
-                    {/* The Placeholder or Real Image renders here */}
                     <Image
                         src={currentDisplayImage}
                         alt={data?.name || "Product Image"}
@@ -130,7 +166,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <div className="px-6 py-4 flex items-center justify-center border-r">
                                 <div className="px-2 py-1 border bg-green-500 w-fit">
                                     <p className="text-base font-medium">
-                                        {formatCurrency(Number(data.price || 0))}
+                                        {formatCurrency(Number(currentPrice))}
                                     </p>
                                 </div>
                             </div>
@@ -165,6 +201,63 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
                         </div>
 
+                        {/* --- VARIANT SELECTION UI --- */}
+                        {data.hasVariants && (
+                            <div className="p-6 border-b space-y-6 bg-neutral-50/50">
+                                {uniqueColors.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Select Color</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {uniqueColors.map((color) => (
+                                                <button
+                                                    key={color}
+                                                    onClick={() => setSelectedColor(color === selectedColor ? null : color)}
+                                                    className={cn(
+                                                        "px-4 py-2 border rounded-md font-medium transition-all",
+                                                        selectedColor === color 
+                                                            ? "bg-black text-white border-black" 
+                                                            : "bg-white text-neutral-900 hover:border-black"
+                                                    )}
+                                                >
+                                                    {color}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {uniqueSizes.length > 0 && (
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Select Size</h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {uniqueSizes.map((size) => (
+                                                <button
+                                                    key={size}
+                                                    onClick={() => setSelectedSize(size === selectedSize ? null : size)}
+                                                    className={cn(
+                                                        "px-4 py-2 border rounded-md font-medium transition-all",
+                                                        selectedSize === size 
+                                                            ? "bg-black text-white border-black" 
+                                                            : "bg-white text-neutral-900 hover:border-black"
+                                                    )}
+                                                >
+                                                    {size}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {activeVariant && (
+                                    <p className="text-sm font-medium text-green-600">
+                                        {activeVariant.stock > 0 
+                                            ? `In Stock (${activeVariant.stock} units left)` 
+                                            : "Currently out of stock for this selection"}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="p-6">
                             {data.description ? (
                                 <RichText data={data.description}/>
@@ -183,6 +276,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                       <CartButton
                                         productId={productId}
                                         tenantSlug={tenantSlug}
+                                        // Pass the specific variant to the cart if selected
+                                        variantId={activeVariant?.id} 
                                       />
                                     <Button
                                       className="size-12"
@@ -244,7 +339,6 @@ export const ProductViewSkeleton = () => {
         <div className="px-4 lg:px-12 py-10">
           <div className="border rounded-sm bg-white overflow-hidden">
               <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] border-b bg-neutral-100 animate-pulse flex items-center justify-center">
-                  {/* Shows placeholder even in skeleton state */}
                   <Image src="/placeholder.png" alt="Loading" fill className="object-contain opacity-50" />
               </div>
               <div className="p-6 space-y-4">

@@ -8,13 +8,14 @@ import { useEffect, useState } from "react";
 interface Props {
     tenantSlug: string;
     productId: string;
+    variantId?: string; // ✅ ADDED: This fixes the "variantId does not exist on type Props" error
     isPurchased?: boolean;
+    disabled?: boolean; // Added for better UX control
 };
 
-export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
+export const CartButton = ({ tenantSlug, productId, variantId, isPurchased, disabled }: Props) => {
     const [isMounted, setIsMounted] = useState(false);
     
-    // Pass the tenantSlug as required by your hook
     const cart = useCart(tenantSlug); 
 
     useEffect(() => {
@@ -41,23 +42,22 @@ export const CartButton = ({ tenantSlug, productId, isPurchased }: Props) => {
         );
     }
 
-    // ✅ FIX: Using the function your store actually provides
-    const isInCart = cart.isProductInCart(productId);
+    // ✅ CHECK: Use both productId and variantId to check if THIS specific version is in cart
+    const isInCart = cart.isProductInCart(productId, variantId);
 
     const handleCartAction = () => {
         if (isInCart) {
-            // ✅ FIX: Use removeProduct instead of removeItem
-            cart.removeProduct(productId);
+            cart.removeProduct(productId, variantId);
         } else {
-            // ✅ FIX: Use addProduct instead of addItem
-            // Note: Your store's addProduct takes a string (id), not an object
-            cart.addProduct(productId);
+            // ✅ PASS VARIANT: Now the cart store knows exactly which color/size to add
+            cart.addProduct(productId, variantId);
         }
     };
 
     return (
         <Button
           variant="elevated"
+          disabled={disabled}
           className={cn(
             "flex-1 bg-green-500 hover:bg-green-600 transition-colors", 
             isInCart && "bg-white text-black border border-neutral-200"

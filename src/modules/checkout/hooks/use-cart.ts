@@ -1,38 +1,40 @@
 import { useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
 
-import { useCartStore } from "../store/use-cart-store";
+import { useCartStore, CartItem } from "../store/use-cart-store";
 
 export const useCart = (tenantSlug: string) => {
-    const getCartByTenant = useCartStore((state) => state.getCartByTenant);
     const addProduct = useCartStore((state) => state.addProduct);
     const removeProduct = useCartStore((state) => state.removeProduct);
     const clearCart = useCartStore((state) => state.clearCart);
     const clearAllCarts = useCartStore((state) => state.clearAllCarts);
 
-    const productIds = useCartStore(
+    // ✅ Now tracking 'items' objects instead of just 'productIds' strings
+    const items = useCartStore(
         useShallow(
             (state) =>
-                state.tenantCarts[tenantSlug]?.productIds || []
+                state.tenantCarts[tenantSlug]?.items || []
         )
     );
 
-    const toggleProduct = useCallback(
-        (productId: string) => {
-            if (productIds.includes(productId)) {
-                removeProduct(tenantSlug, productId);
-            } else {
-                addProduct(tenantSlug, productId);
-            }
+    const isProductInCart = useCallback(
+        (productId: string, variantId?: string) => {
+            return items.some(
+                (item) => item.productId === productId && item.variantId === variantId
+            );
         },
-        [addProduct, removeProduct, productIds, tenantSlug]
+        [items]
     );
 
-    const isProductInCart = useCallback(
-        (productId: string) => {
-            return productIds.includes(productId);
+    const toggleProduct = useCallback(
+        (productId: string, variantId?: string) => {
+            if (isProductInCart(productId, variantId)) {
+                removeProduct(tenantSlug, productId, variantId);
+            } else {
+                addProduct(tenantSlug, productId, variantId);
+            }
         },
-        [productIds]
+        [addProduct, removeProduct, isProductInCart, tenantSlug]
     );
 
     const clearTenantCart = useCallback(() => {
@@ -40,27 +42,27 @@ export const useCart = (tenantSlug: string) => {
     }, [tenantSlug, clearCart]);
 
     const handleAddProduct = useCallback(
-        (productId: string) => {
-            addProduct(tenantSlug, productId);
+        (productId: string, variantId?: string) => {
+            addProduct(tenantSlug, productId, variantId);
         },
         [addProduct, tenantSlug]
     );
 
     const handleRemoveProduct = useCallback(
-        (productId: string) => {
-            removeProduct(tenantSlug, productId);
+        (productId: string, variantId?: string) => {
+            removeProduct(tenantSlug, productId, variantId);
         },
         [removeProduct, tenantSlug]
     );
 
     return {
-        productIds,
+        items, // Returns the array of { productId, variantId }
         addProduct: handleAddProduct,
         removeProduct: handleRemoveProduct,
         clearCart: clearTenantCart,
         clearAllCarts,
         toggleProduct,
         isProductInCart,
-        totalItems: productIds.length,
+        totalItems: items.length,
     };
 };

@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { getPayload } from "payload";
-import payloadConfig from "@payload-config"; // ✅ renamed to avoid conflict
+import payloadConfig from "@payload-config";
 import type { PaystackWebhookEvent } from "@/modules/checkout/types";
 
 export const config = {
   api: {
-    bodyParser: false, // 🚫 Disable automatic body parsing
+    bodyParser: false,
   },
 };
 
@@ -18,11 +18,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Server misconfigured" }, { status: 500 });
     }
 
-    // ✅ Step 1: Read the raw request body text
     const rawBody = await req.text();
     const signature = req.headers.get("x-paystack-signature");
 
-    // ✅ Step 2: Verify the Paystack signature using raw body
     const computedHash = crypto
       .createHmac("sha512", PAYSTACK_SECRET_KEY)
       .update(rawBody)
@@ -33,52 +31,75 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Invalid signature" }, { status: 400 });
     }
 
-    // ✅ Step 3: Parse JSON safely after verifying signature
     const event = JSON.parse(rawBody) as PaystackWebhookEvent;
-    console.log("✅ Paystack event received:", event.event);
-
-    const payload = await getPayload({ config: payloadConfig }); // ✅ use renamed variable
+    const payload = await getPayload({ config: payloadConfig });
 
     if (event.event === "charge.success") {
       const data = event.data;
+      const metadata = data.metadata;
 
-      if (
-        !data.metadata?.userId ||
-        !data.metadata?.tenantId ||
-        !Array.isArray(data.metadata?.products)
-      ) {
+      if (!metadata?.userId || !metadata?.tenantId || !Array.isArray(metadata?.products)) {
         throw new Error("Invalid metadata from Paystack");
       }
 
-      const user = await payload.findByID({
-        collection: "users",
-        id: data.metadata.userId,
-      });
-      const tenant = await payload.findByID({
-        collection: "tenants",
-        id: data.metadata.tenantId,
-      });
-
-      if (!user || !tenant) throw new Error("User or tenant not found");
-
-      const productIds = data.metadata.products.map((p) => p.id);
-      const productNames = data.metadata.products.map((p) => ({ name: p.name }));
-
+      // 1. ✅ Create the Order matching your new Collection schema
       await payload.create({
         collection: "orders",
         data: {
-          tenant: tenant.id,
-          user: user.id,
-          products: productIds,
-          productNames,
+          tenant: metadata.tenantId,
+          user: metadata.userId,
+          products: metadata.products.map((p) => p.id),
+          // Using the new 'items' array from your Orders collection
+          items: metadata.products.map((p) => ({
+            productName: p.name,
+            variantId: p.variantId || undefined,
+            priceAtPurchase: p.price,
+          })),
           paystackReference: data.reference,
           paystackTransactionId: String(data.id),
-          totalAmount: data.amount / 100, // Convert kobo → naira
+          totalAmount: data.amount / 100,
           status: "success",
         },
       });
 
-      console.log(`✅ Order created for user ${user.id} in tenant ${tenant.id}`);
+      // 2. ✅ STOCK REDUCTION LOGIC
+      for (const item of metadata.products) {
+        if (item.variantId) {
+          try {
+            const product = await payload.findByID({
+              collection: "products",
+              id: item.id,
+              depth: 0,
+            });
+
+            if (product && product.hasVariants && Array.isArray(product.variants)) {
+              const updatedVariants = product.variants.map((v: any) => {
+                if (v.id === item.variantId) {
+                  const currentStock = v.stock || 0;
+                  return {
+                    ...v,
+                    stock: Math.max(0, currentStock - 1),
+                  };
+                }
+                return v;
+              });
+
+              await payload.update({
+                collection: "products",
+                id: item.id,
+                data: {
+                  variants: updatedVariants,
+                },
+              });
+              console.log(`📉 Stock reduced for product ${item.id}, variant ${item.variantId}`);
+            }
+          } catch (stockErr) {
+            console.error(`❌ Failed to update stock for product ${item.id}:`, stockErr);
+          }
+        }
+      }
+
+      console.log(`✅ Order and stock update completed for user ${metadata.userId}`);
     } else {
       console.log(`ℹ️ Unhandled Paystack event: ${event.event}`);
     }

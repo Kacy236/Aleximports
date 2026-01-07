@@ -8,84 +8,93 @@ import { sortValues } from "../search-params";
 import { DEFAULT_LIMIT } from "@/constants";
 
 export const productsRouter = createTRPCRouter({
-    getOne: baseProcedure
-      .input(
-        z.object({
-          id: z.string(),
-        })
-      )
-      .query(async ({ ctx, input }) => {
-        const product = await ctx.db.findByID({
-          collection: "products",
-          id: input.id,
-          depth: 2, 
-          select: {
-            content: false,
-          },
+  getOne: baseProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const product = await ctx.db.findByID({
+        collection: "products",
+        id: input.id,
+        depth: 2,
+        select: {
+          content: false,
+        },
+      });
+
+      if (!product || product.isArchived) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Product not found",
         });
+      }
 
-        if (!product || product.isArchived) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Product not found",
-          })
-        }
-
-        const reviews = await ctx.db.find({
-          collection: "reviews",
-          pagination: false,
-          where: {
-            product: {
-              equals: input.id,
-            },
+      const reviews = await ctx.db.find({
+        collection: "reviews",
+        pagination: false,
+        where: {
+          product: {
+            equals: input.id,
           },
-        });
+        },
+      });
 
-        const reviewRating =
-          reviews.docs.length > 0
+      const reviewRating =
+        reviews.docs.length > 0
           ? reviews.docs.reduce((acc, review) => acc + review.rating, 0) / reviews.totalDocs
           : 0;
 
-          const ratingDistribution: Record<number, number> = {
-            5: 0,
-            4: 0,
-            3: 0,
-            2: 0,
-            1: 0,
-          };
+      const ratingDistribution: Record<number, number> = {
+        5: 0,
+        4: 0,
+        3: 0,
+        2: 0,
+        1: 0,
+      };
 
-          if (reviews.totalDocs > 0) {
-            reviews.docs.forEach((review) => {
-              const rating = review.rating;
-              if (rating >=1 && rating <= 5) {
-                ratingDistribution[rating] = (ratingDistribution[rating] || 0) + 1;
-              }
-            });
-
-            Object.keys(ratingDistribution).forEach((key) => {
-              const rating = Number(key);
-              const count = ratingDistribution[rating] || 0;
-              ratingDistribution[rating] = Math.round(
-                (count / reviews.totalDocs) * 100,
-              );
-            });
+      if (reviews.totalDocs > 0) {
+        reviews.docs.forEach((review) => {
+          const rating = review.rating;
+          if (rating >= 1 && rating <= 5) {
+            ratingDistribution[rating] = (ratingDistribution[rating] || 0) + 1;
           }
+        });
 
-        return {
-          ...product,
-          // ✅ Updated to map the array of images
-          images: product.images?.map((item: any) => ({
-            ...item,
-            image: item.image as Media
-          })) || [],
-          tenant: product.tenant as Tenant & { image: Media | null },
-          reviewRating,
-          reviewCount: reviews.totalDocs,
-          ratingDistribution,
-        };
-      }),
+        Object.keys(ratingDistribution).forEach((key) => {
+          const rating = Number(key);
+          const count = ratingDistribution[rating] || 0;
+          ratingDistribution[rating] = Math.round(
+            (count / reviews.totalDocs) * 100
+          );
+        });
+      }
 
-    getMany: baseProcedure
+      return {
+        ...product,
+        // Mapping main product images
+        images: product.images?.map((item: any) => ({
+          ...item,
+          image: item.image as Media,
+        })) || [],
+        
+        // ✅ NEW: Mapping the variants array so images are correctly typed
+        variants: product.hasVariants 
+          ? product.variants?.map((v: any) => ({
+              ...v,
+              variantImage: v.variantImage as Media | null,
+            })) 
+          : [],
+
+        tenant: product.tenant as Tenant & { image: Media | null },
+        reviewRating,
+        reviewCount: reviews.totalDocs,
+        ratingDistribution,
+      };
+    }),
+
+  getMany: baseProcedure
     .input(
       z.object({
         search: z.string().nullable().optional(),
@@ -97,8 +106,8 @@ export const productsRouter = createTRPCRouter({
         tags: z.array(z.string()).nullable().optional(),
         sort: z.enum(sortValues).nullable().optional(),
         tenantSlug: z.string().nullable().optional(),
-    }),
-  )
+      })
+    )
     .query(async ({ ctx, input }) => {
       const where: Where = {
         isArchived: {
@@ -109,7 +118,7 @@ export const productsRouter = createTRPCRouter({
 
       if (input.sort === "curated") {
         sort = "-createdAt";
-      } 
+      }
 
       if (input.sort === "hot_and_new") {
         sort = "createdAt";
@@ -119,31 +128,34 @@ export const productsRouter = createTRPCRouter({
         sort = "-createdAt";
       }
 
+      // Handle Price Filtering
       if (input.minPrice && input.maxPrice) {
         where.price = {
           greater_than_equal: input.minPrice,
           less_than_equal: input.maxPrice,
-        }
+        };
       } else if (input.minPrice) {
         where.price = {
-          greater_than_equal: input.minPrice
-        }
+          greater_than_equal: input.minPrice,
+        };
       } else if (input.maxPrice) {
         where.price = {
-          less_than_equal: input.maxPrice
-        }
+          less_than_equal: input.maxPrice,
+        };
       }
 
+      // Handle Tenant Filtering
       if (input.tenantSlug) {
         where["tenant.slug"] = {
           equals: input.tenantSlug,
-        }
+        };
       } else {
         where["isPrivate"] = {
           not_equals: true,
-        }
+        };
       }
-    
+
+      // Handle Category and Subcategory Resolution
       if (input.category) {
         const categoriesData = await ctx.db.find({
           limit: 1,
@@ -153,90 +165,104 @@ export const productsRouter = createTRPCRouter({
           where: {
             slug: {
               equals: input.category,
-            }
-          }
+            },
+          },
         });
 
         const formattedData = categoriesData.docs.map((doc) => ({
           ...doc,
-          subcategories: (doc.subcategories?.docs ?? []).map((doc) => ({
-              ...(doc as Category),
-              subcategories: undefined,
-          }))
-      }));
+          subcategories: (doc.subcategories?.docs ?? []).map((sub: any) => ({
+            ...(sub as Category),
+            subcategories: undefined,
+          })),
+        }));
 
         const subcategoriesSlugs = [];
         const parentCategory = formattedData[0];
 
         if (parentCategory) {
-            subcategoriesSlugs.push(
-              ...parentCategory.subcategories.map((subcategory) => subcategory.slug)
-            )
+          subcategoriesSlugs.push(
+            ...parentCategory.subcategories.map((subcategory: any) => subcategory.slug)
+          );
 
-            where["category.slug"] = {
-              in: [parentCategory.slug, ...subcategoriesSlugs]
-          }
+          where["category.slug"] = {
+            in: [parentCategory.slug, ...subcategoriesSlugs],
+          };
         }
       }
 
+      // Handle Tag Filtering
       if (input.tags && input.tags.length > 0) {
         where["tags.name"] = {
           in: input.tags,
-        }
+        };
       }
 
+      // Handle Search
       if (input.search) {
         where["name"] = {
           like: input.search,
         };
       }
 
-        const data = await ctx.db.find({
-            collection: 'products',
-            depth: 2, 
-            where,
-            sort,
-            page: input.cursor,
-            limit: input.limit,
-            select: {
-              content: false,
+      // Fetch Products
+      const data = await ctx.db.find({
+        collection: "products",
+        depth: 2,
+        where,
+        sort,
+        page: input.cursor,
+        limit: input.limit,
+        select: {
+          content: false,
+        },
+      });
+
+      // Calculate Review Summary for each product in the list
+      const dataWithSummarizedReviews = await Promise.all(
+        data.docs.map(async (doc) => {
+          const reviewsData = await ctx.db.find({
+            collection: "reviews",
+            pagination: false,
+            where: {
+              product: {
+                equals: doc.id,
+              },
             },
           });
 
-          const dataWithSummarizedReviews = await Promise.all(
-            data.docs.map(async (doc) => {
-              const reviewsData = await ctx.db.find({
-                collection: "reviews",
-                pagination: false,
-                where: {
-                  product: {
-                    equals: doc.id,
-                  },
-                },
-              });
-
-              return {
-                ...doc,
-                reviewCount: reviewsData.totalDocs,
-                reviewRating:
-                  reviewsData.docs.length === 0
-                    ? 0
-                    : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) / reviewsData.totalDocs
-              }
-            })
-          )
-
-        return {
-          ...data,
-          docs: dataWithSummarizedReviews.map((doc) => ({
+          return {
             ...doc,
-            // ✅ Updated to map the array of images for the list view
-            images: doc.images?.map((item: any) => ({
-                ...item,
-                image: item.image as Media
-            })) || [],
-            tenant: doc.tenant as Tenant & { image: Media | null },
-          }))
-        }
+            reviewCount: reviewsData.totalDocs,
+            reviewRating:
+              reviewsData.docs.length === 0
+                ? 0
+                : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) /
+                  reviewsData.totalDocs,
+          };
+        })
+      );
+
+      return {
+        ...data,
+        docs: dataWithSummarizedReviews.map((doc) => ({
+          ...doc,
+          // Map images for list view
+          images: doc.images?.map((item: any) => ({
+            ...item,
+            image: item.image as Media,
+          })) || [],
+          
+          // ✅ NEW: Map variants for list view
+          variants: doc.hasVariants 
+            ? doc.variants?.map((v: any) => ({
+                ...v,
+                variantImage: v.variantImage as Media | null,
+              })) 
+            : [],
+
+          tenant: doc.tenant as Tenant & { image: Media | null },
+        })),
+      };
     }),
 });
