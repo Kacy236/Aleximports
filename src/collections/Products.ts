@@ -19,15 +19,19 @@ const VariantRowLabel = ({ data, index }: { data: any; index?: number }) => {
 
 export const Products: CollectionConfig = {
   slug: "products",
+
   access: {
     create: async ({ req }) => {
       if (isSuperAdmin(req.user)) return true;
+
       const tenantRel = req.user?.tenants?.[0]?.tenant;
       const tenantId =
         typeof tenantRel === "object"
           ? (tenantRel as any).id || (tenantRel as any)._id
           : tenantRel;
+
       if (!tenantId) return false;
+
       let tenant: Tenant | null = null;
       try {
         tenant = await req.payload.findByID({
@@ -38,16 +42,19 @@ export const Products: CollectionConfig = {
         console.error("❌ Failed to fetch tenant:", err.message);
         return false;
       }
+
       return Boolean(tenant?.paystackSubaccountCode);
     },
     delete: ({ req }) => isSuperAdmin(req.user),
     read: () => true,
   },
+
   admin: {
     useAsTitle: "name",
     defaultColumns: ["name", "price", "category", "updatedAt"],
     description: "You must complete your Paystack verification (subaccount) before creating products.",
   },
+
   fields: [
     {
       name: "name",
@@ -88,11 +95,12 @@ export const Products: CollectionConfig = {
       label: "Product Variants",
       admin: {
         condition: (data) => data?.hasVariants,
+        // Informing the vendor about the Duplicate feature directly in the UI
+        description: "TIP: Fill out one variant, then click the 'Duplicate' icon (two squares) on the right of the row to quickly create more.",
         components: {
           /**
-           * 2. Reference the component here.
-           * By casting to 'any', we bypass the strict PayloadComponent mismatch 
-           * that often occurs in .ts files during the Next.js build process.
+           * By casting to 'any', we bypass strict PayloadComponent mismatch 
+           * that occurs in .ts files during the production build.
            */
           RowLabel: VariantRowLabel as any,
         },
@@ -127,6 +135,7 @@ export const Products: CollectionConfig = {
               type: "number",
               label: "Stock",
               required: true,
+              defaultValue: 0,
               admin: { width: "15%" },
             },
             {
