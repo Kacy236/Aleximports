@@ -41,7 +41,7 @@ export const libraryRouter = createTRPCRouter({
         });
       }
 
-      // 2. Fetch the full product details (depth 2 to get Media/Tenant info)
+      // 2. Fetch the full product details
       const product = await ctx.db.findByID({
         collection: "products",
         id: input.productId,
@@ -56,31 +56,35 @@ export const libraryRouter = createTRPCRouter({
       }
 
       /**
-       * ✅ FIX: VARIANT DETECTION
-       * We look into the order to find the specific variant name.
-       * This assumes your order stores a 'selectedVariantId' or similar 
-       * inside an items array.
+       * ✅ UPDATED VARIANT DETECTION
+       * We first look for the pre-formatted 'variantName' we stored during checkout.
+       * If that's missing, we fall back to calculating it from the variant ID.
        */
       let purchasedVariantName: string | null = null;
 
-      // Find the item in the order that matches this product ID
       const orderItem = (order as any).items?.find(
         (item: any) => 
           (typeof item.product === 'object' ? item.product.id : item.product) === input.productId
       );
 
-      // If a variant was recorded in the order, find its label in the product
-      if (orderItem?.variantId && product.hasVariants && product.variants) {
-        const variant = product.variants.find((v: any) => v.id === orderItem.variantId);
-        if (variant) {
-          const parts = [variant.color, variant.size].filter(Boolean);
-          purchasedVariantName = parts.length > 0 ? parts.join(" / ") : null;
+      if (orderItem) {
+        // 1. Check if we have the new variantName field directly
+        if (orderItem.variantName) {
+          purchasedVariantName = orderItem.variantName;
+        } 
+        // 2. Fallback: manual lookup if only variantId exists
+        else if (orderItem.variantId && product.hasVariants && product.variants) {
+          const variant = product.variants.find((v: any) => v.id === orderItem.variantId);
+          if (variant) {
+            const parts = [variant.color, variant.size].filter(Boolean);
+            purchasedVariantName = parts.length > 0 ? parts.join(" / ") : "Standard";
+          }
         }
       }
 
       return {
         ...product,
-        purchasedVariant: purchasedVariantName, // e.g., "Blue / XL"
+        purchasedVariant: purchasedVariantName, 
       };
     }),
 
@@ -92,7 +96,6 @@ export const libraryRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // ✅ THE FIX: Ensure cursor is a number (fallback to 1) for Payload CMS
       const pageNumber = input.cursor ?? 1;
 
       const ordersData = await ctx.db.find({
@@ -102,59 +105,48 @@ export const libraryRouter = createTRPCRouter({
         limit: input.limit,
         where: {
           and: [
-            {
-              user: { equals: ctx.session.user.id },
-            },
-            {
-              status: { equals: "success" },
-            },
+            { user: { equals: ctx.session.user.id } },
+            { status: { equals: "success" } },
           ],
         },
       });
 
-      // Extract all product IDs from the user's successful orders
       const productIds = ordersData.docs.flatMap((order: any) => order.products || []);
       const uniqueProductIds = [...new Set(productIds)];
 
-      // Fetch the products based on those IDs
+      if (uniqueProductIds.length === 0) {
+        return { totalDocs: 0, nextPage: null, hasNextPage: false, docs: [] };
+      }
+
       const productsData = await ctx.db.find({
         collection: "products",
         pagination: false,
         depth: 2,
         where: {
-          id: {
-            in: uniqueProductIds,
-          },
+          id: { in: uniqueProductIds },
         },
       });
 
-      // Attach review summaries to each product for the library list view
       const dataWithSummarizedReviews = await Promise.all(
         productsData.docs.map(async (doc) => {
           const reviewsData = await ctx.db.find({
             collection: "reviews",
             pagination: false,
-            where: {
-              product: {
-                equals: doc.id,
-              },
-            },
+            where: { product: { equals: doc.id } },
           });
 
           return {
             ...doc,
             reviewCount: reviewsData.totalDocs,
-            reviewRating:
-              reviewsData.docs.length === 0
+            reviewRating: reviewsData.docs.length === 0
                 ? 0
-                : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) / reviewsData.totalDocs,
+                : reviewsData.docs.reduce((acc, r) => acc + r.rating, 0) / reviewsData.totalDocs,
           };
         })
       );
 
       return {
         totalDocs: productsData.totalDocs,
-        // ✅ Ensure nextPage is null (not undefined) for Tanstack Infinite Query
         nextPage: ordersData.nextPage ?? null,
         hasNextPage: ordersData.hasNextPage,
         docs: dataWithSummarizedReviews.map((doc) => ({
