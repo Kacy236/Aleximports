@@ -47,7 +47,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
     const images = useMemo(() => data?.images || [], [data?.images]);
 
-    // --- 1. GET ALL UNIQUE OPTIONS (The full list of buttons) ---
+    // --- 1. GET ALL UNIQUE OPTIONS ---
     const allPossibleColors = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
         const colors = data.variants.map((v: any) => v.color).filter(Boolean);
@@ -60,7 +60,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return Array.from(new Set(sizes)) as string[];
     }, [data?.variants, data?.hasVariants]);
 
-    // --- 2. CALCULATE WHICH OPTIONS ARE VALID BASED ON THE OTHER SELECTION ---
+    // --- 2. CALCULATE VALID OPTIONS ---
     const availableColors = useMemo(() => {
         if (!selectedSize) return allPossibleColors;
         return data?.variants
@@ -75,7 +75,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             .map((v: any) => v.size) || [];
     }, [selectedColor, data?.variants, allPossibleSizes]);
 
-    // --- 3. FIND THE CURRENTLY SELECTED VARIANT OBJECT ---
+    // --- 3. FIND ACTIVE VARIANT ---
     const activeVariant = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return null;
         
@@ -106,8 +106,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return data?.price || 0;
     }, [activeVariant, data?.price]);
 
-    const tenant = data?.tenant as Tenant | undefined;
-    const tenantImage = tenant?.image as Media | undefined;
+    const tenant = data?.tenant as (Tenant & { image?: Media }) | undefined;
+    const tenantImage = tenant?.image;
 
     const nextImage = () => {
         if (images.length <= 1) return;
@@ -175,22 +175,22 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         </div>
                         <div className="border-y flex flex-wrap">
                             <div className="px-6 py-4 flex items-center justify-center border-r">
-                                <div className="px-2 py-1 border bg-green-500 w-fit">
-                                    <p className="text-base font-medium">
+                                <div className="px-3 py-1 border bg-green-500 rounded-sm">
+                                    <p className="text-base font-bold text-white">
                                         {formatCurrency(Number(currentPrice))}
                                     </p>
                                 </div>
                             </div>
 
                             <div className="px-6 py-4 flex items-center justify-center lg:border-r">
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group/tenant">
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group/tenant cursor-pointer">
                                     {tenantImage?.url && (
                                         <Image 
                                           src={tenantImage.url}
                                           alt={tenant?.name || "Store"}
-                                          width={20}
-                                          height={20}
-                                          className="rounded-full border shrink-0 size-[20px]"
+                                          width={24}
+                                          height={24}
+                                          className="rounded-full border shrink-0 size-[24px]"
                                         />
                                     )}
                                     <p className="text-base font-medium underline underline-offset-4 decoration-neutral-300 group-hover/tenant:decoration-green-500 transition-colors">
@@ -205,7 +205,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                       rating={data.reviewRating ?? 0}
                                       iconClassName="size-4"
                                     />
-                                    <p className="text-base font-medium">
+                                    <p className="text-base font-medium text-neutral-600">
                                         {data.reviewCount ?? 0} ratings
                                     </p>
                                 </div>
@@ -216,34 +216,36 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         {data.hasVariants && (
                             <div className="p-6 border-b space-y-6 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Selection</h3>
+                                    <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Product Options</h3>
                                     {(selectedColor || selectedSize) && (
                                         <button 
                                             onClick={() => { setSelectedColor(null); setSelectedSize(null); }}
-                                            className="text-xs flex items-center gap-1 text-red-500 hover:underline font-medium"
+                                            className="text-xs flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors font-semibold cursor-pointer"
                                         >
-                                            <X size={12}/> Clear Selection
+                                            <X size={14}/> Reset Selection
                                         </button>
                                     )}
                                 </div>
 
                                 {allPossibleColors.length > 0 && (
                                     <div className="space-y-3">
-                                        <h3 className="text-sm font-medium text-neutral-700">Select Color</h3>
-                                        <div className="flex flex-wrap gap-2">
+                                        <h3 className="text-sm font-semibold text-neutral-800">Color / Style</h3>
+                                        <div className="flex flex-wrap gap-3">
                                             {allPossibleColors.map((color) => {
                                                 const isAvailable = availableColors.includes(color);
+                                                const isSelected = selectedColor === color;
                                                 return (
                                                     <button
                                                         key={color}
                                                         disabled={!isAvailable}
                                                         onClick={() => setSelectedColor(color === selectedColor ? null : color)}
                                                         className={cn(
-                                                            "px-4 py-2 border rounded-md font-medium transition-all",
-                                                            selectedColor === color 
-                                                                ? "bg-black text-white border-black" 
-                                                                : "bg-white text-neutral-900 hover:border-black",
-                                                            !isAvailable && "opacity-20 cursor-not-allowed border-dashed"
+                                                            "px-5 py-2.5 border rounded-lg font-medium transition-all duration-200 shadow-sm",
+                                                            "cursor-pointer active:scale-95 touch-manipulation",
+                                                            isSelected 
+                                                                ? "bg-green-600 text-white border-green-700 ring-4 ring-green-500/10 scale-105" 
+                                                                : "bg-white text-neutral-900 border-neutral-200 hover:border-green-500 hover:text-green-600",
+                                                            !isAvailable && "opacity-25 cursor-not-allowed border-dashed grayscale"
                                                         )}
                                                     >
                                                         {color}
@@ -256,21 +258,23 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
                                 {allPossibleSizes.length > 0 && (
                                     <div className="space-y-3">
-                                        <h3 className="text-sm font-medium text-neutral-700">Select Size</h3>
-                                        <div className="flex flex-wrap gap-2">
+                                        <h3 className="text-sm font-semibold text-neutral-800">Size / Configuration</h3>
+                                        <div className="flex flex-wrap gap-3">
                                             {allPossibleSizes.map((size) => {
                                                 const isAvailable = availableSizes.includes(size);
+                                                const isSelected = selectedSize === size;
                                                 return (
                                                     <button
                                                         key={size}
                                                         disabled={!isAvailable}
                                                         onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                                                         className={cn(
-                                                            "px-4 py-2 border rounded-md font-medium transition-all",
-                                                            selectedSize === size 
-                                                                ? "bg-black text-white border-black" 
-                                                                : "bg-white text-neutral-900 hover:border-black",
-                                                            !isAvailable && "opacity-20 cursor-not-allowed border-dashed"
+                                                            "px-5 py-2.5 border rounded-lg font-medium transition-all duration-200 shadow-sm",
+                                                            "cursor-pointer active:scale-95 touch-manipulation",
+                                                            isSelected 
+                                                                ? "bg-green-600 text-white border-green-700 ring-4 ring-green-500/10 scale-105" 
+                                                                : "bg-white text-neutral-900 border-neutral-200 hover:border-green-500 hover:text-green-600",
+                                                            !isAvailable && "opacity-25 cursor-not-allowed border-dashed grayscale"
                                                         )}
                                                     >
                                                         {size}
@@ -283,12 +287,19 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 
                                 {activeVariant && (
                                     <div className={cn(
-                                        "p-3 rounded-md text-sm font-medium",
-                                        activeVariant.stock > 0 ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
+                                        "p-4 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-top-1 duration-300",
+                                        activeVariant.stock > 0 
+                                            ? "bg-green-50 text-green-700 border border-green-200" 
+                                            : "bg-red-50 text-red-700 border border-red-200"
                                     )}>
                                         {activeVariant.stock > 0 
-                                            ? `✓ In Stock (${activeVariant.stock} available)` 
-                                            : "✕ Selection out of stock"}
+                                            ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                                                    ✓ {activeVariant.stock} items available
+                                                </div>
+                                            )
+                                            : "✕ This variant is currently out of stock"}
                                     </div>
                                 )}
                             </div>
@@ -315,38 +326,44 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                       />
                                     <button
                                       className={cn(
-                                        "size-12 flex items-center justify-center border rounded-md transition-all shadow-sm",
-                                        isCopied ? "bg-green-500 text-white border-green-600" : "bg-white hover:bg-neutral-50"
+                                        "size-12 flex items-center justify-center border rounded-md transition-all shadow-sm cursor-pointer",
+                                        isCopied ? "bg-green-600 text-white border-green-700" : "bg-white hover:bg-neutral-50 active:scale-90"
                                       )}
                                       onClick={() => {
                                           setIsCopied(true);
                                           navigator.clipboard.writeText(window.location.href);
-                                          toast.success("URL copied!")
+                                          toast.success("Link copied to clipboard!");
                                           setTimeout(() => setIsCopied(false), 2000);
                                       }}
                                     >
                                         {isCopied ? <CheckIcon className="size-5"/> : <LinkIcon className="size-5" />}
                                     </button>
                                 </div>
-                                <p className="text-center font-medium">
-                                    {data.refundPolicy === "no-refunds" ? "No refunds" : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} guarantee`}
+                                <p className="text-center font-medium text-neutral-600 text-sm">
+                                    {data.refundPolicy === "no-refunds" ? "Final Sale - No refunds" : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} return policy`}
                                 </p>
                             </div>
 
                             <div className="p-6">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-xl font-medium">Ratings</h3>
-                                    <div className="flex items-center gap-x-1 font-medium text-base">
-                                        <StarIcon className="size-4 fill-black" />
-                                        <p>({(data.reviewRating ?? 0).toFixed(1)}) {data.reviewCount ?? 0} ratings</p>
+                                    <h3 className="text-xl font-medium">Customer Reviews</h3>
+                                    <div className="flex items-center gap-x-1 font-bold text-base">
+                                        <StarIcon className="size-4 fill-green-500 text-green-500" />
+                                        <p>{(data.reviewRating ?? 0).toFixed(1)}</p>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4">
+                                <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-6 items-center">
                                 {[5, 4, 3, 2, 1].map((stars) => (
                                     <Fragment key={stars}>
-                                        <div className="font-medium text-sm">{stars} stars</div>
-                                        <Progress value={data.ratingDistribution?.[stars] ?? 0} className="h-4" />
-                                        <div className="font-medium text-sm">{data.ratingDistribution?.[stars] ?? 0}%</div>
+                                        <div className="font-medium text-sm text-neutral-500">{stars}★</div>
+                                        <Progress 
+                                            value={data.ratingDistribution?.[stars] ?? 0} 
+                                            className="h-2 bg-neutral-100" 
+                                            // Make the bar green
+                                        />
+                                        <div className="font-medium text-sm text-neutral-400 w-8 text-right">
+                                            {data.ratingDistribution?.[stars] ?? 0}%
+                                        </div>
                                     </Fragment>
                                 ))}
                                 </div>
