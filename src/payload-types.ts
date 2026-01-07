@@ -261,7 +261,7 @@ export interface Product {
         color?: string | null;
         size?: string | null;
         /**
-         * Leave empty to use base price.
+         * Empty = Base
          */
         variantPrice?: number | null;
         stock: number;
@@ -271,6 +271,9 @@ export interface Product {
     | null;
   category: string | Category;
   tags?: (string | Tag)[] | null;
+  /**
+   * Upload up to 8 images. The first image will be the primary thumbnail.
+   */
   images: {
     image: string | Media;
     id?: string | null;
@@ -325,8 +328,15 @@ export interface Order {
   items?:
     | {
         productName: string;
+        /**
+         * The technical ID of the variant
+         */
         variantId?: string | null;
-        priceAtPurchase?: number | null;
+        /**
+         * The specific options selected by the user
+         */
+        variantName?: string | null;
+        priceAtPurchase: number;
         id?: string | null;
       }[]
     | null;
@@ -574,6 +584,7 @@ export interface OrdersSelect<T extends boolean = true> {
     | {
         productName?: T;
         variantId?: T;
+        variantName?: T;
         priceAtPurchase?: T;
         id?: T;
       };

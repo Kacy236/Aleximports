@@ -255,7 +255,7 @@ export const productsRouter = createTRPCRouter({
           
           // ✅ NEW: Map variants for list view
           variants: doc.hasVariants 
-            ? doc.variants?.map((v: any) => ({
+            ? (doc.variants || [])?.map((v: any) => ({
                 ...v,
                 variantImage: v.variantImage as Media | null,
               })) 
