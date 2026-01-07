@@ -107,7 +107,9 @@ export const SearchInput = ({
       <div className="flex items-center gap-3 w-full lg:w-auto">
         <DropdownMenu
           onOpenChange={(open) => {
-            document.body.style.overflow = open ? "hidden" : "";
+            if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+              document.body.style.overflow = open ? "hidden" : "";
+            }
             if (!open) setStoreSearch("");
           }}
         >
@@ -133,11 +135,11 @@ export const SearchInput = ({
           {/* 🔥 ALIGN CENTERED */}
           <DropdownMenuContent
             side="bottom"
-            align="center" 
+            align="center"
             sideOffset={12}
-            avoidCollisions={true}
+            avoidCollisions={false}
             className="w-[calc(100vw-32px)] sm:w-[350px]
-                       max-h-[70vh]
+                       max-h-[70dvh]
                        rounded-xl p-2
                        border-2 border-black
                        shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]
@@ -147,7 +149,7 @@ export const SearchInput = ({
             <div className="relative mb-2">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-black/50" />
               <input
-                autoFocus
+                autoFocus={typeof window !== "undefined" && window.innerWidth >= 1024}
                 placeholder="Find a store..."
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
@@ -165,7 +167,7 @@ export const SearchInput = ({
             </div>
 
             {/* SCROLLABLE STORE LIST */}
-            <div className="max-h-[50vh] overflow-y-auto overscroll-contain">
+            <div className="max-h-[50dvh] overflow-y-auto overscroll-contain touch-pan-y">
               <DropdownMenuItem
                 onClick={() => onTenantChange?.(undefined)}
                 className="rounded-lg py-3.5 font-bold cursor-pointer focus:bg-green-400 uppercase text-xs"
