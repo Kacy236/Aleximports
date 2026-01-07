@@ -1,15 +1,16 @@
 import { isSuperAdmin } from "@/lib/access";
 import type { CollectionConfig } from "payload";
 import type { Tenant } from "@/payload-types";
-import React from 'react';
+import React from "react";
 
 /**
- * 1. Define the component outside the config.
- * This ensures TypeScript treats it as a Component, not just a random function.
+ * Variant row label
  */
 const VariantRowLabel = ({ data, index }: { data: any; index?: number }) => {
   const label = [data?.color, data?.size].filter(Boolean).join(" - ");
-  const rowNum = typeof index === 'number' ? String(index + 1).padStart(2, '0') : '';
+  const rowNum =
+    typeof index === "number" ? String(index + 1).padStart(2, "0") : "";
+
   return React.createElement(
     React.Fragment,
     null,
@@ -33,6 +34,7 @@ export const Products: CollectionConfig = {
       if (!tenantId) return false;
 
       let tenant: Tenant | null = null;
+
       try {
         tenant = await req.payload.findByID({
           collection: "tenants",
@@ -52,7 +54,8 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: "name",
     defaultColumns: ["name", "price", "category", "updatedAt"],
-    description: "You must complete your Paystack verification (subaccount) before creating products.",
+    description:
+      "You must complete your Paystack verification (subaccount) before creating products.",
   },
 
   fields: [
@@ -79,29 +82,41 @@ export const Products: CollectionConfig = {
         description: "The default price if no variant price is set.",
       },
     },
-    // --- VARIANTS SECTION ---
+        // =========================
+    // CATEGORY
+    // =========================
+    {
+      name: "category",
+      type: "relationship",
+      relationTo: "categories",
+      required: true,
+      hasMany: false,
+      filterOptions: {
+        parent: { exists: true },
+      },
+    },
+
+    // =========================
+    // VARIANTS (MOVED UP)
+    // =========================
     {
       name: "hasVariants",
       type: "checkbox",
       label: "This product has multiple options (sizes, colors, etc.)",
       defaultValue: false,
       admin: {
-        position: 'sidebar',
+        position: "sidebar",
       },
     },
     {
       name: "variants",
       type: "array",
-      label: "Product Variants",
+      label: "Product Options",
       admin: {
         condition: (data) => data?.hasVariants,
-        // Informing the vendor about the Duplicate feature directly in the UI
-        description: "TIP: Fill out one variant, then click the 'Duplicate' icon (two squares) on the right of the row to quickly create more.",
+        description:
+          "TIP: Fill out one option, then click the 'Duplicate' icon (three dots) on the top right of the row to quickly create more.",
         components: {
-          /**
-           * By casting to 'any', we bypass strict PayloadComponent mismatch 
-           * that occurs in .ts files during the production build.
-           */
           RowLabel: VariantRowLabel as any,
         },
       },
@@ -125,9 +140,9 @@ export const Products: CollectionConfig = {
               name: "variantPrice",
               type: "number",
               label: "Price (₦)",
-              admin: { 
+              admin: {
                 width: "20%",
-                description: "Empty = Base" 
+                description: "Empty = Base Price",
               },
             },
             {
@@ -149,32 +164,22 @@ export const Products: CollectionConfig = {
         },
       ],
     },
-    // --- END VARIANTS SECTION ---
-    {
-      name: "category",
-      type: "relationship",
-      relationTo: "categories",
-      required: true,
-      hasMany: false,
-      filterOptions: {
-        parent: { exists: true },
-      },
-    },
-    {
-      name: "tags",
-      type: "relationship",
-      relationTo: "tags",
-      hasMany: true,
-    },
+
+
+
+    // =========================
+    // PRODUCT IMAGES
+    // =========================
     {
       name: "images",
-      label: "Product Images",
+      label: "Product Image",
       required: true,
       type: "array",
       minRows: 1,
       maxRows: 8,
       admin: {
-        description: "Upload up to 8 images. The first image will be the primary thumbnail.",
+        description:
+          "Upload your product image or images. The first image will be the primary image.",
       },
       fields: [
         {
@@ -185,6 +190,17 @@ export const Products: CollectionConfig = {
         },
       ],
     },
+
+    // =========================
+    // TAGS (MOVED BELOW IMAGES)
+    // =========================
+    {
+      name: "tags",
+      type: "relationship",
+      relationTo: "tags",
+      hasMany: true,
+    },
+
     {
       name: "refundPolicy",
       type: "select",
