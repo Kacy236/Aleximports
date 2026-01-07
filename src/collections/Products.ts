@@ -172,8 +172,8 @@ export const Products: CollectionConfig = {
     // =========================
     {
       name: "images",
-      label: "Product Image",
       required: true,
+      label: "Product Image",
       type: "array",
       minRows: 1,
       maxRows: 8,
