@@ -46,6 +46,7 @@ export const SearchInput = ({
   const [searchValue, setSearchValue] = useState(defaultValue || "");
   const [storeSearch, setStoreSearch] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const trpc = useTRPC();
   const session = useQuery(trpc.auth.session.queryOptions());
@@ -67,6 +68,21 @@ export const SearchInput = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue, onChange]);
 
+  /* 🔥 KEYBOARD DETECTION */
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+
+    const viewport = window.visualViewport;
+
+    const handleResize = () => {
+      const offset = window.innerHeight - viewport.height;
+      setKeyboardOffset(offset > 0 ? offset : 0);
+    };
+
+    viewport.addEventListener("resize", handleResize);
+    return () => viewport.removeEventListener("resize", handleResize);
+  }, []);
+
   const boldBorderStyle =
     "border-[2.5px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[1px] active:translate-y-[1px]";
 
@@ -74,7 +90,7 @@ export const SearchInput = ({
     <div className="flex flex-col lg:flex-row items-center gap-3 w-full max-w-6xl mx-auto p-1">
       <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
-      {/* TOP ROW: SEARCH + FILTER */}
+      {/* TOP ROW */}
       <div className="flex flex-row items-center gap-2 w-full flex-1">
         <div className="relative flex-1">
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black z-10" />
@@ -103,7 +119,7 @@ export const SearchInput = ({
         </Button>
       </div>
 
-      {/* BOTTOM ROW: STORE SELECTOR + LIBRARY */}
+      {/* STORE SELECTOR */}
       <div className="flex items-center gap-3 w-full lg:w-auto">
         <DropdownMenu
           onOpenChange={(open) => {
@@ -132,12 +148,17 @@ export const SearchInput = ({
             </Button>
           </DropdownMenuTrigger>
 
-          {/* 🔥 ALIGN CENTERED */}
           <DropdownMenuContent
             side="bottom"
             align="center"
             sideOffset={12}
             avoidCollisions={false}
+            style={{
+              transform:
+                keyboardOffset > 0
+                  ? `translateY(-${keyboardOffset / 2}px)`
+                  : undefined,
+            }}
             className="w-[calc(100vw-32px)] sm:w-[350px]
                        max-h-[70dvh]
                        rounded-xl p-2
@@ -166,7 +187,7 @@ export const SearchInput = ({
               )}
             </div>
 
-            {/* SCROLLABLE STORE LIST */}
+            {/* STORE LIST */}
             <div className="max-h-[50dvh] overflow-y-auto overscroll-contain touch-pan-y">
               <DropdownMenuItem
                 onClick={() => onTenantChange?.(undefined)}
