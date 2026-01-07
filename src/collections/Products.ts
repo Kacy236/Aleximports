@@ -151,6 +151,10 @@ export const Products: CollectionConfig = {
       required: true,
       type: "array",
       minRows: 1,
+      maxRows: 8, // ✅ LIMIT ADDED: Maximum 8 images
+      admin: {
+        description: "Upload up to 10 images. The first image will be the primary thumbnail.",
+      },
       fields: [
         {
           name: "image",
