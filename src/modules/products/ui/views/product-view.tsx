@@ -296,7 +296,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                             ? (
                                                 <div className="flex items-center gap-2">
                                                     <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                                    ✓ {activeVariant.stock} items available
+                                                    ✓ {activeVariant.stock} available in stock
                                                 </div>
                                             )
                                             : "✕ This variant is currently out of stock"}
