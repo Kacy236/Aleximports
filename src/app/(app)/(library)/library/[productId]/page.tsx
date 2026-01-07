@@ -1,4 +1,4 @@
-import { ProductView, ProductViewSkeleton } from "@/modules/library/ui/views/product-view";
+import { ProductView, ProductViewSkeleton } from "../../../../../modules/library/ui/views/product-view";
 import { getQueryClient, trpc } from "@/trpc/server";
 
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
