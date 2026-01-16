@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight, X, Maximize2 } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState, useMemo, useEffect, Fragment, useCallback } from "react";
+import { useState, useMemo, useEffect, Fragment, useCallback, useRef } from "react";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -33,6 +33,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [isMounted, setIsMounted] = useState(false);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
     
+    // Swipe tracking refs
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -58,6 +62,37 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     }, [images.length]);
 
+    // --- TOUCH SWIPE LOGIC (TS FIX APPLIED) ---
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchEndX.current = null;
+        // Fix: Added optional chaining and null check for TypeScript
+        const firstTouch = e.targetTouches[0];
+        if (firstTouch) {
+            touchStartX.current = firstTouch.clientX;
+        }
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        // Fix: Added optional chaining and null check for TypeScript
+        const moveTouch = e.targetTouches[0];
+        if (moveTouch) {
+            touchEndX.current = moveTouch.clientX;
+        }
+    };
+
+    const onTouchEnd = () => {
+        if (touchStartX.current === null || touchEndX.current === null) return;
+        
+        const distance = touchStartX.current - touchEndX.current;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe) nextImage();
+        if (isRightSwipe) prevImage();
+    };
+
     // --- KEYBOARD & SCROLL LOCK ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -80,7 +115,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         };
     }, [isLightboxOpen, nextImage, prevImage]);
 
-    // --- IMAGE LOGIC ---
+    // --- VARIANT & PRICE LOGIC ---
     const activeVariant = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return null;
         return data.variants.find((v: any) => {
@@ -102,17 +137,22 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return "/placeholder.png";
     }, [data, images, selectedImageIndex, activeVariant]);
 
-    // ... (Keep existing Variant/Price/Tenant logic same as before)
+    const currentPrice = useMemo(() => {
+        if (activeVariant?.variantPrice) return activeVariant.variantPrice;
+        return data?.price || 0;
+    }, [activeVariant, data?.price]);
+
+    const tenant = data?.tenant as (Tenant & { image?: Media }) | undefined;
+    const tenantImage = tenant?.image;
+
     const allPossibleColors = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
-        const colors = data.variants.map((v: any) => v.color).filter(Boolean);
-        return Array.from(new Set(colors)) as string[];
+        return Array.from(new Set(data.variants.map((v: any) => v.color).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
     const allPossibleSizes = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
-        const sizes = data.variants.map((v: any) => v.size).filter(Boolean);
-        return Array.from(new Set(sizes)) as string[];
+        return Array.from(new Set(data.variants.map((v: any) => v.size).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
     const availableColors = useMemo(() => {
@@ -125,78 +165,69 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return data?.variants?.filter((v: any) => v.color === selectedColor).map((v: any) => v.size) || [];
     }, [selectedColor, data?.variants, allPossibleSizes]);
 
-    const currentPrice = useMemo(() => {
-        if (activeVariant?.variantPrice) return activeVariant.variantPrice;
-        return data?.price || 0;
-    }, [activeVariant, data?.price]);
-
-    const tenant = data?.tenant as (Tenant & { image?: Media }) | undefined;
-    const tenantImage = tenant?.image;
-
     if (!isMounted) return <ProductViewSkeleton />;
     if (!data) return null;
 
     return (
         <div className="px-4 lg:px-12 py-10">
-            {/* --- ENHANCED LIGHTBOX OVERLAY --- */}
+            {/* --- LIGHTBOX OVERLAY --- */}
             {isLightboxOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
-                    {/* Close Button */}
+                <div 
+                    className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300 touch-none"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                >
                     <button 
-                        className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 z-[110]"
+                        className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 z-[110] cursor-pointer"
                         onClick={() => setIsLightboxOpen(false)}
                     >
                         <X size={40} />
                     </button>
 
-                    {/* Lightbox Navigation - Only if multiple images */}
                     {images.length > 1 && (
-                        <>
+                        <div className="hidden md:block">
                             <button 
                                 onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110"
+                                className="absolute left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110 cursor-pointer"
                             >
                                 <ChevronLeft size={48} />
                             </button>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110"
+                                className="absolute right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110 cursor-pointer"
                             >
                                 <ChevronRight size={48} />
                             </button>
-                        </>
+                        </div>
                     )}
                     
-                    {/* Fullscreen Image Container */}
-                    <div 
-                        className="relative w-full h-full max-w-6xl max-h-[85vh] mx-4 cursor-pointer"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            nextImage(); // Clicking image also advances
-                        }}
-                    >
+                    <div className="relative w-full h-full max-w-6xl max-h-[80vh] mx-4 pointer-events-none select-none">
                         <Image
                             src={currentDisplayImage}
                             alt={data?.name || "Full screen view"}
                             fill
-                            className="object-contain select-none"
+                            className="object-contain"
                             quality={100}
                         />
                     </div>
                     
-                    {/* Footer / Counter */}
                     <div className="mt-6 text-center select-none">
                         <p className="text-white font-medium text-lg">{data.name}</p>
-                        <p className="text-white/40 text-sm mt-1">
-                            Use arrow keys to navigate — {selectedImageIndex + 1} / {images.length}
+                        <p className="text-white/40 text-sm mt-1 uppercase tracking-widest">
+                            {images.length > 1 ? `Slide to view — ${selectedImageIndex + 1} / ${images.length}` : ""}
                         </p>
                     </div>
                 </div>
             )}
 
             <div className="border rounded-sm bg-white overflow-hidden">
-                <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
-                    {/* Main Image Trigger */}
+                <div 
+                    className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50 overflow-hidden"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                >
                     <div 
                         className="relative w-full h-full cursor-zoom-in"
                         onClick={() => setIsLightboxOpen(true)}
@@ -208,7 +239,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             className="object-contain transition-opacity duration-300"
                             priority
                         />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none">
                             <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30">
                                 <Maximize2 className="text-white size-6 drop-shadow-md" />
                             </div>
@@ -220,8 +251,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <button 
                                 onClick={(e) => { e.stopPropagation(); prevImage(); }}
                                 className={cn(
-                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
-                                    "bg-white/90 border border-neutral-200 text-neutral-900", 
+                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all",
+                                    "bg-white/90 border border-neutral-200 text-neutral-900 hidden md:flex", 
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:text-green-600"
                                 )}
@@ -231,27 +262,27 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             <button 
                                 onClick={(e) => { e.stopPropagation(); nextImage(); }}
                                 className={cn(
-                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
-                                    "bg-white/90 border border-neutral-200 text-neutral-900",
+                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all",
+                                    "bg-white/90 border border-neutral-200 text-neutral-900 hidden md:flex",
                                     "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
                                     "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:text-green-600"
                                 )}
                             >
                                 <ChevronRight className="size-5 sm:size-6" />
                             </button>
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border border-white/20">
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border border-white/20">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
                         </>
                     )}
                 </div>
 
-                {/* ... (Keep the rest of your original Grid/Variants/Sidebar code exactly as it was) ... */}
                 <div className="grid grid-cols-1 lg:grid-cols-6">
                     <div className="col-span-4">
                         <div className="p-6">
                             <h1 className="text-4xl font-medium">{data.name}</h1>
                         </div>
+                        
                         <div className="border-y flex flex-wrap">
                             <div className="px-6 py-4 flex items-center justify-center border-r">
                                 <div className="px-3 py-1 border bg-green-500 rounded-sm">
@@ -277,7 +308,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     </p>
                                 </Link>
                             </div>
-                            {/* ... continue with rest of the original code ... */}
+
                             <div className="hidden lg:flex px-6 py-4 items-center justify-center">
                                 <div className="flex items-center gap-2">
                                     <StarRating
@@ -362,24 +393,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                         </div>
                                     </div>
                                 )}
-                                
-                                {activeVariant && (
-                                    <div className={cn(
-                                        "p-4 rounded-xl text-sm font-bold animate-in fade-in slide-in-from-top-1 duration-300",
-                                        activeVariant.stock > 0 
-                                            ? "bg-green-50 text-green-700 border border-green-200" 
-                                            : "bg-red-50 text-red-700 border border-red-200"
-                                    )}>
-                                        {activeVariant.stock > 0 
-                                            ? (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                                    ✓ {activeVariant.stock} available in stock
-                                                </div>
-                                            )
-                                            : "✕ This variant is currently out of stock"}
-                                    </div>
-                                )}
                             </div>
                         )}
 
@@ -453,23 +466,13 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     );
 };
 
-// ... (ProductViewSkeleton remains the same)
 export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
-            <div className="border rounded-sm bg-white overflow-hidden">
-                <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] bg-neutral-50 flex items-center justify-center border-b overflow-hidden">
-                    <div className="relative size-40 md:size-64 opacity-20 animate-pulse">
-                        <Image
-                            src="/placeholder.png"
-                            alt="Loading..."
-                            fill
-                            className="object-contain grayscale"
-                        />
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-6 p-6">
-                    <div className="col-span-4 h-24 bg-neutral-100 animate-pulse rounded-md" />
+            <div className="border rounded-sm bg-white overflow-hidden animate-pulse">
+                <div className="w-full h-[400px] md:h-[600px] bg-neutral-100" />
+                <div className="p-6 space-y-4">
+                    <div className="h-10 w-1/2 bg-neutral-100 rounded" />
                 </div>
             </div>
         </div>
