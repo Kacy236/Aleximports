@@ -215,7 +215,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     <div className="mt-6 text-center select-none">
                         <p className="text-white font-medium text-lg">{data.name}</p>
                         <p className="text-white/40 text-sm mt-1 uppercase tracking-widest">
-                            {images.length > 1 ? `Slide to view — ${selectedImageIndex + 1} / ${images.length}` : ""}
+                            {images.length > 1 ? `${selectedImageIndex + 1} / ${images.length}` : ""}
                         </p>
                     </div>
                 </div>
