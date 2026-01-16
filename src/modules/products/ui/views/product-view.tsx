@@ -3,7 +3,7 @@
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight, X, Maximize2 } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState, useMemo, useEffect, Fragment } from "react";
@@ -31,9 +31,21 @@ interface ProductViewProps {
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [isMounted, setIsMounted] = useState(false);
+    const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+    
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Lock scroll when lightbox is open
+    useEffect(() => {
+        if (isLightboxOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "unset";
+        }
+        return () => { document.body.style.overflow = "unset"; };
+    }, [isLightboxOpen]);
 
     const trpc = useTRPC();
     const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
@@ -41,13 +53,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-    // --- VARIANT STATES ---
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
     const images = useMemo(() => data?.images || [], [data?.images]);
 
-    // --- 1. GET ALL UNIQUE OPTIONS ---
     const allPossibleColors = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
         const colors = data.variants.map((v: any) => v.color).filter(Boolean);
@@ -60,7 +70,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return Array.from(new Set(sizes)) as string[];
     }, [data?.variants, data?.hasVariants]);
 
-    // --- 2. CALCULATE VALID OPTIONS ---
     const availableColors = useMemo(() => {
         if (!selectedSize) return allPossibleColors;
         return data?.variants
@@ -75,10 +84,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             .map((v: any) => v.size) || [];
     }, [selectedColor, data?.variants, allPossibleSizes]);
 
-    // --- 3. FIND ACTIVE VARIANT ---
     const activeVariant = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return null;
-        
         return data.variants.find((v: any) => {
             const colorMatch = selectedColor ? v.color === selectedColor : true;
             const sizeMatch = selectedSize ? v.size === selectedSize : true;
@@ -86,12 +93,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         });
     }, [data?.variants, data?.hasVariants, selectedColor, selectedSize]);
 
-    // --- IMAGE LOGIC ---
     const currentDisplayImage = useMemo(() => {
         if (!data) return "/placeholder.png";
         const variantImg = activeVariant?.variantImage as Media | undefined;
         if (variantImg?.url) return variantImg.url;
-
         if (images.length === 0) return "/placeholder.png";
         const imgObj = images[selectedImageIndex]?.image;
         if (imgObj && typeof imgObj === "object" && "url" in imgObj && imgObj.url) {
@@ -100,7 +105,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return "/placeholder.png";
     }, [data, images, selectedImageIndex, activeVariant]);
 
-    // --- PRICE LOGIC ---
     const currentPrice = useMemo(() => {
         if (activeVariant?.variantPrice) return activeVariant.variantPrice;
         return data?.price || 0;
@@ -124,20 +128,65 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
     return (
         <div className="px-4 lg:px-12 py-10">
+            {/* --- LIGHTBOX OVERLAY --- */}
+            {isLightboxOpen && (
+                <div 
+                    className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-200"
+                    onClick={() => setIsLightboxOpen(false)}
+                >
+                    <button 
+                        className="absolute top-6 right-6 text-white/70 hover:text-white transition-colors p-2 bg-white/10 rounded-full z-[110]"
+                        onClick={() => setIsLightboxOpen(false)}
+                    >
+                        <X size={32} />
+                    </button>
+                    
+                    <div className="relative w-full h-full max-w-5xl max-h-[80vh] mx-4">
+                        <Image
+                            src={currentDisplayImage}
+                            alt={data?.name || "Full screen view"}
+                            fill
+                            className="object-contain"
+                            quality={100}
+                        />
+                    </div>
+                    
+                    <div className="mt-4 text-center">
+                        <p className="text-white font-medium text-lg">{data.name}</p>
+                        <p className="text-white/50 text-sm">Image {selectedImageIndex + 1} of {images.length}</p>
+                    </div>
+                </div>
+            )}
+
             <div className="border rounded-sm bg-white overflow-hidden">
                 <div className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50">
-                    <Image
-                        src={currentDisplayImage}
-                        alt={data?.name || "Product Image"}
-                        fill
-                        className="object-contain transition-opacity duration-300"
-                        priority
-                    />
+                    {/* Main Clickable Image Container */}
+                    <div 
+                        className="relative w-full h-full cursor-zoom-in"
+                        onClick={() => setIsLightboxOpen(true)}
+                    >
+                        <Image
+                            src={currentDisplayImage}
+                            alt={data?.name || "Product Image"}
+                            fill
+                            className="object-contain transition-opacity duration-300"
+                            priority
+                        />
+                        {/* Hover hint */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5">
+                            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30">
+                                <Maximize2 className="text-white size-6 drop-shadow-md" />
+                            </div>
+                        </div>
+                    </div>
 
                     {images.length > 1 && (
                         <>
                             <button 
-                                onClick={prevImage}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    prevImage();
+                                }}
                                 className={cn(
                                     "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
                                     "bg-white/90 border border-neutral-200 text-neutral-900", 
@@ -149,7 +198,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 <ChevronLeft className="size-5 sm:size-6" />
                             </button>
                             <button 
-                                onClick={nextImage}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    nextImage();
+                                }}
                                 className={cn(
                                     "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all duration-150",
                                     "bg-white/90 border border-neutral-200 text-neutral-900",
@@ -212,7 +264,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
                         </div>
 
-                        {/* --- VARIANT SELECTION --- */}
                         {data.hasVariants && (
                             <div className="p-6 border-b space-y-6 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
@@ -379,9 +430,7 @@ export const ProductViewSkeleton = () => {
     return (
         <div className="px-4 lg:px-12 py-10">
             <div className="border rounded-sm bg-white overflow-hidden">
-                {/* Image Placeholder Section */}
                 <div className="relative w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] bg-neutral-50 flex items-center justify-center border-b overflow-hidden">
-                    {/* Pulsing Placeholder Image */}
                     <div className="relative size-40 md:size-64 opacity-20 animate-pulse">
                         <Image
                             src="/placeholder.png"
@@ -390,34 +439,25 @@ export const ProductViewSkeleton = () => {
                             className="object-contain grayscale"
                         />
                     </div>
-                    
-                    {/* Shimmer overlay effect */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-6">
                     <div className="col-span-4 p-6 space-y-8">
-                        {/* Title Skeleton */}
                         <div className="space-y-3">
                             <div className="h-10 w-2/3 bg-neutral-100 rounded-md animate-pulse" />
                             <div className="h-4 w-1/4 bg-neutral-50 rounded-md animate-pulse" />
                         </div>
-                        
-                        {/* Details Bar Skeleton */}
                         <div className="flex gap-4 border-y py-4">
                             <div className="h-10 w-24 bg-neutral-100 rounded animate-pulse" />
                             <div className="h-10 w-32 bg-neutral-100 rounded animate-pulse" />
                         </div>
-
-                        {/* Description Skeleton */}
                         <div className="space-y-4">
                             <div className="h-4 w-full bg-neutral-50 rounded animate-pulse" />
                             <div className="h-4 w-full bg-neutral-50 rounded animate-pulse" />
                             <div className="h-4 w-3/4 bg-neutral-50 rounded animate-pulse" />
                         </div>
                     </div>
-
-                    {/* Sidebar Skeleton */}
                     <div className="col-span-2 border-l border-neutral-100 p-6 space-y-6">
                         <div className="h-12 w-full bg-neutral-100 rounded-md animate-pulse" />
                         <div className="h-40 w-full bg-neutral-50 rounded-md animate-pulse" />
