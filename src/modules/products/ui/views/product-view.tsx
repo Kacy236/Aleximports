@@ -181,21 +181,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return Array.from(new Set(data.variants.map((v: any) => v.size).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
-    const availableColors = useMemo(() => {
-        if (!selectedSize) return allPossibleColors;
-        return data?.variants?.filter((v: any) => v.size === selectedSize).map((v: any) => v.color) || [];
-    }, [selectedSize, data?.variants, allPossibleColors]);
-
-    const availableSizes = useMemo(() => {
-        if (!selectedColor) return allPossibleSizes;
-        return data?.variants?.filter((v: any) => v.color === selectedColor).map((v: any) => v.size) || [];
-    }, [selectedColor, data?.variants, allPossibleSizes]);
-
     if (!isMounted) return <ProductViewSkeleton />;
     if (!data) return null;
 
     return (
-        <div className="px-4 lg:px-12 py-10 min-h-screen bg-neutral-50/20">
+        <div className="px-0 sm:px-4 lg:px-12 py-0 sm:py-10 min-h-screen bg-neutral-50/20">
             {/* --- LIGHTBOX OVERLAY --- */}
             {isLightboxOpen && (
                 <div 
@@ -240,7 +230,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
             )}
 
-            <div className="max-w-[1600px] mx-auto border-2 border-black rounded-sm bg-white overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="max-w-[1600px] mx-auto border-x-0 sm:border-2 border-black sm:rounded-sm bg-white overflow-hidden sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 {/* --- MAIN HERO GALLERY --- */}
                 <div 
                     className="relative group w-full h-[400px] sm:h-[500px] md:h-[700px] lg:h-[850px] border-b-2 border-black bg-neutral-100 overflow-hidden"
@@ -288,40 +278,40 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
 
                 {/* --- CONTENT GRID --- */}
-                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-black">
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-black">
                     
                     {/* --- LEFT COLUMN: DETAILS & VARIANTS --- */}
                     <div className="col-span-4 flex flex-col">
-                        <div className="p-8 lg:p-12">
+                        <div className="p-6 sm:p-8 lg:p-12">
                             <div className="flex flex-col gap-2">
                                 <span className="text-xs font-black uppercase tracking-widest text-green-600 bg-green-50 w-fit px-2 py-1 border border-green-600">New Arrival</span>
-                                <h1 className="text-5xl lg:text-7xl font-black uppercase italic tracking-tighter text-black leading-none">
+                                <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase italic tracking-tighter text-black leading-tight break-words">
                                     {data.name}
                                 </h1>
                             </div>
                         </div>
                         
-                        <div className="border-y-2 border-black grid grid-cols-2 md:grid-cols-4 bg-white">
-                            <div className="p-6 flex flex-col items-center justify-center border-r-2 border-black">
+                        <div className="border-y-2 border-black grid grid-cols-2 md:grid-cols-4 bg-white divide-x-2 divide-y-2 md:divide-y-0 divide-black">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center">
                                 <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Price</span>
-                                <p className="text-2xl font-black text-black">
+                                <p className="text-xl sm:text-2xl font-black text-black">
                                     {formatCurrency(Number(currentPrice))}
                                 </p>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-r-0 md:border-r-2 border-black">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center overflow-hidden">
                                 <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Vendor</span>
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group cursor-pointer">
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group cursor-pointer max-w-full">
                                     {tenantImage?.url && (
-                                        <Image src={tenantImage.url} alt="store" width={20} height={20} className="rounded-full border border-black size-5" />
+                                        <Image src={tenantImage.url} alt="store" width={20} height={20} className="rounded-full border border-black size-5 shrink-0" />
                                     )}
-                                    <span className="font-bold border-b-2 border-black group-hover:bg-black group-hover:text-white transition-colors">
+                                    <span className="font-bold border-b-2 border-black group-hover:bg-black group-hover:text-white transition-colors truncate block">
                                         {tenant?.name}
                                     </span>
                                 </Link>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0 border-r-2 border-black">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center">
                                 <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Rating</span>
                                 <div className="flex items-center gap-1">
                                     <StarRating rating={data.reviewRating ?? 0} iconClassName="size-3" />
@@ -329,15 +319,15 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 </div>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center">
                                 <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Shipping</span>
-                                <span className="font-bold text-xs uppercase tracking-widest">Free Global</span>
+                                <span className="font-bold text-xs uppercase tracking-widest text-center">Free Global</span>
                             </div>
                         </div>
 
                         {/* --- VARIANT SELECTOR --- */}
                         {data.hasVariants && (
-                            <div className="p-8 lg:p-12 border-b-2 border-black space-y-10 bg-neutral-50/50">
+                            <div className="p-6 sm:p-8 lg:p-12 border-b-2 border-black space-y-10 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Color / Style</h3>
                                     {(selectedColor || selectedSize) && (
@@ -363,10 +353,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                                     "group flex flex-col items-center gap-2 p-2 border-2 transition-all duration-300 cursor-pointer",
                                                     isSelected 
                                                         ? "border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" 
-                                                        : "border-transparent hover:opacity-100 hover:border-neutral-200"
+                                                        : "border-transparent hover:border-neutral-200"
                                                 )}
                                             >
-                                                <div className="relative size-24 border-2 border-black overflow-hidden bg-white">
+                                                <div className="relative size-20 sm:size-24 border-2 border-black overflow-hidden bg-white">
                                                     {vImg ? (
                                                         <Image src={vImg} alt={color} fill className="object-cover" />
                                                     ) : (
@@ -375,7 +365,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                                     {isLow && (
                                                         <div className="absolute top-1 left-1 right-1 z-10">
                                                             <div className="bg-orange-500 text-white text-[8px] font-black uppercase py-1 rounded flex items-center justify-center gap-1 shadow-lg border border-black">
-                                                                <AlertCircle size={8} /> {stock} left
+                                                                <AlertCircle size={8} /> {stock}
                                                             </div>
                                                         </div>
                                                     )}
@@ -417,7 +407,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
                         )}
 
-                        <div className="p-8 lg:p-12 prose prose-neutral max-w-none">
+                        <div className="p-6 sm:p-8 lg:p-12 prose prose-neutral max-w-none">
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-6">Product Story</h3>
                             {data.description ? <RichText data={data.description} /> : <p className="italic">No description available.</p>}
                         </div>
@@ -431,7 +421,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     productId={productId} 
                                     tenantSlug={tenantSlug} 
                                     variantId={activeVariant?.id}
-                                    // Fix: using !! to force boolean type for TypeScript
                                     disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
                                 />
                                 <button 
@@ -514,23 +503,23 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 // --- COMPREHENSIVE SKELETON LOADER ---
 export const ProductViewSkeleton = () => {
     return (
-        <div className="px-4 lg:px-12 py-10 animate-pulse bg-neutral-50">
-            <div className="max-w-[1600px] mx-auto border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
-                <div className="w-full h-[600px] bg-neutral-200" />
-                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-2 divide-neutral-100">
-                    <div className="col-span-4 p-12 space-y-8">
-                        <div className="h-16 w-3/4 bg-neutral-200 rounded-sm" />
+        <div className="px-0 sm:px-4 lg:px-12 py-0 sm:py-10 animate-pulse bg-neutral-50">
+            <div className="max-w-[1600px] mx-auto border-y-2 sm:border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
+                <div className="w-full h-[400px] sm:h-[600px] bg-neutral-200" />
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-neutral-100">
+                    <div className="col-span-4 p-8 sm:p-12 space-y-8">
+                        <div className="h-10 sm:h-16 w-3/4 bg-neutral-200 rounded-sm" />
                         <div className="h-20 w-full bg-neutral-100 rounded-sm" />
                         <div className="space-y-4">
                             <div className="h-6 w-1/4 bg-neutral-200 rounded-sm" />
                             <div className="flex gap-4">
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
                             </div>
                         </div>
                     </div>
-                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6">
+                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6 hidden lg:block">
                         <div className="h-14 w-full bg-neutral-200 rounded-sm" />
                         <div className="h-14 w-full bg-neutral-200 rounded-sm" />
                         <div className="h-40 w-full bg-neutral-100 rounded-sm" />
