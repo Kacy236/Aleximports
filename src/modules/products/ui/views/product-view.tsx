@@ -62,12 +62,11 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     }, [images.length]);
 
-    // --- TOUCH SWIPE LOGIC (TS FIX APPLIED) ---
+    // --- TOUCH SWIPE LOGIC ---
     const minSwipeDistance = 50;
 
     const onTouchStart = (e: React.TouchEvent) => {
         touchEndX.current = null;
-        // Fix: Added optional chaining and null check for TypeScript
         const firstTouch = e.targetTouches[0];
         if (firstTouch) {
             touchStartX.current = firstTouch.clientX;
@@ -75,7 +74,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     };
 
     const onTouchMove = (e: React.TouchEvent) => {
-        // Fix: Added optional chaining and null check for TypeScript
         const moveTouch = e.targetTouches[0];
         if (moveTouch) {
             touchEndX.current = moveTouch.clientX;
@@ -339,26 +337,54 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 {allPossibleColors.length > 0 && (
                                     <div className="space-y-3">
                                         <h3 className="text-sm font-semibold text-neutral-800">Color / Style</h3>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="flex flex-wrap gap-4">
                                             {allPossibleColors.map((color) => {
                                                 const isAvailable = availableColors.includes(color);
                                                 const isSelected = selectedColor === color;
+                                                
+                                                // Find first variant matching this color to extract its specific image
+                                                const colorVariant = data.variants?.find((v: any) => v.color === color);
+                                                const variantImgUrl = (colorVariant?.variantImage as Media)?.url;
+
                                                 return (
-                                                    <button
-                                                        key={color}
-                                                        disabled={!isAvailable}
-                                                        onClick={() => setSelectedColor(color === selectedColor ? null : color)}
-                                                        className={cn(
-                                                            "px-5 py-2.5 border rounded-lg font-medium transition-all duration-200 shadow-sm",
-                                                            "cursor-pointer active:scale-95 touch-manipulation",
-                                                            isSelected 
-                                                                ? "bg-green-600 text-white border-green-700 ring-4 ring-green-500/10 scale-105" 
-                                                                : "bg-white text-neutral-900 border-neutral-200 hover:border-green-500 hover:text-green-600",
-                                                            !isAvailable && "opacity-25 cursor-not-allowed border-dashed grayscale"
+                                                    <div key={color} className="flex flex-col items-center gap-2">
+                                                        {/* Variant Image Preview */}
+                                                        {variantImgUrl && (
+                                                            <div 
+                                                                onClick={() => isAvailable && setSelectedColor(color === selectedColor ? null : color)}
+                                                                className={cn(
+                                                                    "relative size-16 rounded-md overflow-hidden border-2 transition-all cursor-pointer shadow-sm",
+                                                                    isSelected 
+                                                                        ? "border-green-600 ring-2 ring-green-500/20 scale-110" 
+                                                                        : "border-transparent hover:border-neutral-300",
+                                                                    !isAvailable && "opacity-40 grayscale"
+                                                                )}
+                                                            >
+                                                                <Image 
+                                                                    src={variantImgUrl} 
+                                                                    alt={color} 
+                                                                    fill 
+                                                                    className="object-cover"
+                                                                />
+                                                            </div>
                                                         )}
-                                                    >
-                                                        {color}
-                                                    </button>
+                                                        
+                                                        {/* Color Name Button */}
+                                                        <button
+                                                            disabled={!isAvailable}
+                                                            onClick={() => setSelectedColor(color === selectedColor ? null : color)}
+                                                            className={cn(
+                                                                "px-3 py-1.5 border rounded-lg font-medium text-[10px] uppercase transition-all duration-200 shadow-sm",
+                                                                "cursor-pointer active:scale-95 touch-manipulation",
+                                                                isSelected 
+                                                                    ? "bg-green-600 text-white border-green-700" 
+                                                                    : "bg-white text-neutral-900 border-neutral-200 hover:border-green-500 hover:text-green-600",
+                                                                !isAvailable && "opacity-25 cursor-not-allowed border-dashed grayscale"
+                                                            )}
+                                                        >
+                                                            {color}
+                                                        </button>
+                                                    </div>
                                                 )
                                             })}
                                         </div>
