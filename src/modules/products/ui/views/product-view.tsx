@@ -337,7 +337,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-1">
                                     {allPossibleColors.map((color) => {
                                         const colorVar = data.variants?.find((v: any) => v.color === color);
                                         const vImg = (colorVar?.variantImage as Media)?.url;
