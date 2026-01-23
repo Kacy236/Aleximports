@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/modules/checkout/hooks/use-cart";
 import { useEffect, useState } from "react";
+import { ShoppingCart } from "lucide-react";
 
 interface Props {
     tenantSlug: string;
@@ -79,6 +80,7 @@ export const CartButton = ({
           )}
           onClick={handleCartAction}
         >
+            <ShoppingCart size={20} />
           {isInCart ? "Remove from cart" : "Add to cart"}
         </Button>
     );

@@ -14,7 +14,8 @@ import {
     AlertCircle, 
     ShieldCheck, 
     Truck, 
-    RefreshCcw 
+    RefreshCcw,
+    ShoppingCart
 } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -38,6 +39,7 @@ const CartButton = dynamic(
         ssr: false,
         loading: () => (
             <Button disabled className="flex-1 bg-green-500 h-12">
+                <ShoppingCart size={20} />
                 Loading Cart...
             </Button>
         )
