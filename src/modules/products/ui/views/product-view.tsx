@@ -38,7 +38,7 @@ const CartButton = dynamic(
         ssr: false,
         loading: () => (
             <Button disabled className="flex-1 bg-green-500 h-12">
-                Loading Cart...
+                Loading...
             </Button>
         )
     },
@@ -181,21 +181,27 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         return Array.from(new Set(data.variants.map((v: any) => v.size).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
-    const availableColors = useMemo(() => {
-        if (!selectedSize) return allPossibleColors;
-        return data?.variants?.filter((v: any) => v.size === selectedSize).map((v: any) => v.color) || [];
-    }, [selectedSize, data?.variants, allPossibleColors]);
-
-    const availableSizes = useMemo(() => {
-        if (!selectedColor) return allPossibleSizes;
-        return data?.variants?.filter((v: any) => v.color === selectedColor).map((v: any) => v.size) || [];
-    }, [selectedColor, data?.variants, allPossibleSizes]);
-
     if (!isMounted) return <ProductViewSkeleton />;
     if (!data) return null;
 
     return (
-        <div className="px-4 lg:px-12 py-10 min-h-screen bg-neutral-50/20">
+        <div className="px-0 sm:px-4 lg:px-12 py-0 sm:py-10 min-h-screen bg-neutral-50/20 pb-24 lg:pb-10">
+            {/* --- MOBILE STICKY FOOTER --- */}
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-4 border-black p-4 flex items-center justify-between gap-4 lg:hidden shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase text-neutral-400">Total Price</span>
+                    <span className="text-xl font-black">{formatCurrency(Number(currentPrice))}</span>
+                </div>
+                <div className="flex-1 max-w-[200px]">
+                   <CartButton 
+                        productId={productId} 
+                        tenantSlug={tenantSlug} 
+                        variantId={activeVariant?.id}
+                        disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
+                    />
+                </div>
+            </div>
+
             {/* --- LIGHTBOX OVERLAY --- */}
             {isLightboxOpen && (
                 <div 
@@ -208,7 +214,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 z-[110] cursor-pointer"
                         onClick={() => setIsLightboxOpen(false)}
                     >
-                        <X size={44} />
+                        <X className="size-8 sm:size-11" />
                     </button>
 
                     {images.length > 1 && (
@@ -240,10 +246,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
             )}
 
-            <div className="max-w-[1600px] mx-auto border-2 border-black rounded-sm bg-white overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="max-w-[1600px] mx-auto border-x-0 sm:border-2 border-black sm:rounded-sm bg-white overflow-hidden sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 {/* --- MAIN HERO GALLERY --- */}
                 <div 
-                    className="relative group w-full h-[400px] sm:h-[500px] md:h-[700px] lg:h-[850px] border-b-2 border-black bg-neutral-100 overflow-hidden"
+                    className="relative group w-full h-[50vh] sm:h-[500px] md:h-[700px] lg:h-[850px] border-b-2 border-black bg-neutral-100 overflow-hidden"
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
@@ -280,7 +286,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             >
                                 <ChevronRight className="size-8" />
                             </button>
-                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-2 rounded-full text-xs font-black tracking-tighter border-2 border-white">
+                            <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 bg-black text-white px-4 sm:px-6 py-1 sm:py-2 rounded-full text-[10px] sm:text-xs font-black tracking-tighter border-2 border-white">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
                         </>
@@ -288,66 +294,66 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </div>
 
                 {/* --- CONTENT GRID --- */}
-                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-black">
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-black">
                     
                     {/* --- LEFT COLUMN: DETAILS & VARIANTS --- */}
                     <div className="col-span-4 flex flex-col">
-                        <div className="p-8 lg:p-12">
+                        <div className="p-6 sm:p-8 lg:p-12">
                             <div className="flex flex-col gap-2">
-                                <span className="text-xs font-black uppercase tracking-widest text-green-600 bg-green-50 w-fit px-2 py-1 border border-green-600">New Arrival</span>
-                                <h1 className="text-5xl lg:text-7xl font-black uppercase italic tracking-tighter text-black leading-none">
+                                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-green-600 bg-green-50 w-fit px-2 py-1 border border-green-600">New Arrival</span>
+                                <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black uppercase italic tracking-tighter text-black leading-tight sm:leading-none">
                                     {data.name}
                                 </h1>
                             </div>
                         </div>
                         
-                        <div className="border-y-2 border-black grid grid-cols-2 md:grid-cols-4 bg-white">
-                            <div className="p-6 flex flex-col items-center justify-center border-r-2 border-black">
-                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Price</span>
-                                <p className="text-2xl font-black text-black">
+                        <div className="border-y-2 border-black grid grid-cols-2 md:grid-cols-4 bg-white divide-x-2 divide-y-2 md:divide-y-0 divide-black">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center">
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase text-neutral-400 mb-1">Price</span>
+                                <p className="text-xl sm:text-2xl font-black text-black text-center">
                                     {formatCurrency(Number(currentPrice))}
                                 </p>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-r-0 md:border-r-2 border-black">
-                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Vendor</span>
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group cursor-pointer">
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center border-r-0 md:border-r-2">
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase text-neutral-400 mb-1">Vendor</span>
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group cursor-pointer overflow-hidden">
                                     {tenantImage?.url && (
-                                        <Image src={tenantImage.url} alt="store" width={20} height={20} className="rounded-full border border-black size-5" />
+                                        <Image src={tenantImage.url} alt="store" width={20} height={20} className="rounded-full border border-black size-4 sm:size-5 shrink-0" />
                                     )}
-                                    <span className="font-bold border-b-2 border-black group-hover:bg-black group-hover:text-white transition-colors">
+                                    <span className="font-bold text-xs sm:text-sm border-b-2 border-black group-hover:bg-black group-hover:text-white transition-colors truncate">
                                         {tenant?.name}
                                     </span>
                                 </Link>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0 border-r-2 border-black">
-                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Rating</span>
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center">
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase text-neutral-400 mb-1">Rating</span>
                                 <div className="flex items-center gap-1">
-                                    <StarRating rating={data.reviewRating ?? 0} iconClassName="size-3" />
-                                    <span className="font-bold text-xs">({data.reviewCount ?? 0})</span>
+                                    <StarRating rating={data.reviewRating ?? 0} iconClassName="size-2 sm:size-3" />
+                                    <span className="font-bold text-[10px] sm:text-xs">({data.reviewCount ?? 0})</span>
                                 </div>
                             </div>
 
-                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0">
-                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Shipping</span>
-                                <span className="font-bold text-xs uppercase tracking-widest">Free Global</span>
+                            <div className="p-4 sm:p-6 flex flex-col items-center justify-center border-r-0">
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase text-neutral-400 mb-1">Shipping</span>
+                                <span className="font-bold text-[10px] sm:text-xs uppercase tracking-tight sm:tracking-widest text-center">Free Global</span>
                             </div>
                         </div>
 
                         {/* --- VARIANT SELECTOR --- */}
                         {data.hasVariants && (
-                            <div className="p-8 lg:p-12 border-b-2 border-black space-y-10 bg-neutral-50/50">
+                            <div className="p-6 sm:p-8 lg:p-12 border-b-2 border-black space-y-6 sm:space-y-10 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Color / Style</h3>
+                                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Color / Style</h3>
                                     {(selectedColor || selectedSize) && (
-                                        <button onClick={() => { setSelectedColor(null); setSelectedSize(null); }} className="text-xs font-black flex items-center gap-1 text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors uppercase cursor-pointer">
+                                        <button onClick={() => { setSelectedColor(null); setSelectedSize(null); }} className="text-[10px] sm:text-xs font-black flex items-center gap-1 text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors uppercase cursor-pointer">
                                             <RefreshCcw size={12} /> Reset
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap gap-2 sm:gap-3">
                                     {allPossibleColors.map((color) => {
                                         const colorVar = data.variants?.find((v: any) => v.color === color);
                                         const vImg = (colorVar?.variantImage as Media)?.url;
@@ -360,29 +366,29 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                                 key={color}
                                                 onClick={() => setSelectedColor(color === selectedColor ? null : color)}
                                                 className={cn(
-                                                    "group flex flex-col items-center gap-2 p-2 border-2 transition-all duration-300 cursor-pointer",
+                                                    "group flex flex-col items-center gap-2 p-1.5 sm:p-2 border-2 transition-all duration-300 cursor-pointer",
                                                     isSelected 
-                                                        ? "border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" 
-                                                        : "border-transparent hover:opacity-100 hover:border-neutral-200"
+                                                        ? "border-black bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" 
+                                                        : "border-transparent hover:border-neutral-200"
                                                 )}
                                             >
-                                                <div className="relative size-24 border-2 border-black overflow-hidden bg-white">
+                                                <div className="relative size-16 sm:size-24 border-2 border-black overflow-hidden bg-white">
                                                     {vImg ? (
                                                         <Image src={vImg} alt={color} fill className="object-cover" />
                                                     ) : (
-                                                        <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold uppercase">No Preview</div>
+                                                        <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-[8px] sm:text-[10px] font-bold uppercase">No Preview</div>
                                                     )}
                                                     {isLow && (
                                                         <div className="absolute top-1 left-1 right-1 z-10">
-                                                            <div className="bg-orange-500 text-white text-[8px] font-black uppercase py-1 rounded flex items-center justify-center gap-1 shadow-lg border border-black">
-                                                                <AlertCircle size={8} /> {stock} left
+                                                            <div className="bg-orange-500 text-white text-[6px] sm:text-[8px] font-black uppercase py-0.5 sm:py-1 rounded flex items-center justify-center gap-1 shadow-lg border border-black">
+                                                                <AlertCircle className="size-2" /> {stock}
                                                             </div>
                                                         </div>
                                                     )}
                                                     {stock === 0 && <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10"><span className="text-[8px] font-black uppercase bg-black text-white px-1">Sold Out</span></div>}
                                                 </div>
                                                 <span className={cn(
-                                                    "text-[10px] font-black uppercase tracking-tighter border-2 border-black px-2 py-0.5",
+                                                    "text-[8px] sm:text-[10px] font-black uppercase tracking-tighter border-2 border-black px-1.5 sm:px-2 py-0.5",
                                                     isSelected ? "bg-black text-white" : "bg-white text-black"
                                                 )}>
                                                     {color}
@@ -393,7 +399,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 </div>
 
                                 <div className="space-y-4 pt-4">
-                                    <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Size</h3>
+                                    <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Size</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {allPossibleSizes.map((size) => {
                                             const isSelected = selectedSize === size;
@@ -402,9 +408,9 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                                     key={size}
                                                     onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                                                     className={cn(
-                                                        "px-6 py-3 border-2 font-black text-sm uppercase transition-all cursor-pointer",
+                                                        "px-4 py-2 sm:px-6 sm:py-3 border-2 font-black text-xs sm:text-sm uppercase transition-all cursor-pointer",
                                                         isSelected 
-                                                            ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(22,163,74,1)]" 
+                                                            ? "bg-black text-white border-black shadow-[3px_3px_0px_0px_rgba(22,163,74,1)] sm:shadow-[4px_4px_0px_0px_rgba(22,163,74,1)]" 
                                                             : "bg-white text-black border-black hover:bg-neutral-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none"
                                                     )}
                                                 >
@@ -417,21 +423,20 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             </div>
                         )}
 
-                        <div className="p-8 lg:p-12 prose prose-neutral max-w-none">
+                        <div className="p-6 sm:p-8 lg:p-12 prose prose-neutral max-w-none">
                             <h3 className="text-xl font-black uppercase tracking-tighter mb-6">Product Story</h3>
                             {data.description ? <RichText data={data.description} /> : <p className="italic">No description available.</p>}
                         </div>
                     </div>
 
-                    {/* --- RIGHT COLUMN: ACTIONS & STATS --- */}
-                    <div className="col-span-2 flex flex-col bg-neutral-50/30">
+                    {/* --- RIGHT COLUMN: ACTIONS & STATS (Desktop) --- */}
+                    <div className="col-span-2 hidden lg:flex flex-col bg-neutral-50/30">
                         <div className="p-8 space-y-8 sticky top-0">
                             <div className="flex flex-col gap-4">
                                 <CartButton 
                                     productId={productId} 
                                     tenantSlug={tenantSlug} 
                                     variantId={activeVariant?.id}
-                                    // Fix: using !! to force boolean type for TypeScript
                                     disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
                                 />
                                 <button 
@@ -514,23 +519,23 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 // --- COMPREHENSIVE SKELETON LOADER ---
 export const ProductViewSkeleton = () => {
     return (
-        <div className="px-4 lg:px-12 py-10 animate-pulse bg-neutral-50">
-            <div className="max-w-[1600px] mx-auto border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
-                <div className="w-full h-[600px] bg-neutral-200" />
-                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-2 divide-neutral-100">
-                    <div className="col-span-4 p-12 space-y-8">
-                        <div className="h-16 w-3/4 bg-neutral-200 rounded-sm" />
+        <div className="px-0 sm:px-4 lg:px-12 py-0 sm:py-10 animate-pulse bg-neutral-50">
+            <div className="max-w-[1600px] mx-auto border-y-2 sm:border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
+                <div className="w-full h-[50vh] sm:h-[600px] bg-neutral-200" />
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-neutral-100">
+                    <div className="col-span-4 p-6 sm:p-12 space-y-8">
+                        <div className="h-10 sm:h-16 w-3/4 bg-neutral-200 rounded-sm" />
                         <div className="h-20 w-full bg-neutral-100 rounded-sm" />
                         <div className="space-y-4">
                             <div className="h-6 w-1/4 bg-neutral-200 rounded-sm" />
                             <div className="flex gap-4">
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-16 sm:size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-16 sm:size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-16 sm:size-24 bg-neutral-200 rounded-sm" />
                             </div>
                         </div>
                     </div>
-                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6">
+                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6 hidden lg:block">
                         <div className="h-14 w-full bg-neutral-200 rounded-sm" />
                         <div className="h-14 w-full bg-neutral-200 rounded-sm" />
                         <div className="h-40 w-full bg-neutral-100 rounded-sm" />
