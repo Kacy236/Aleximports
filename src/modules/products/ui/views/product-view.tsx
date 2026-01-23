@@ -329,7 +329,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
                         {/* --- VARIANT SELECTOR --- */}
                         {data.hasVariants && (
-                            <div className="p-3 sm:p-8 lg:p-12 border-b-2 border-black space-y-10 bg-neutral-50/50">
+                            <div className="p-3 sm:p-8 lg:p-12 border-b-2 border-black space-y-6 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Color / Style</h3>
                                     {(selectedColor || selectedSize) && (
