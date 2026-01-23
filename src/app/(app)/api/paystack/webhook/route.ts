@@ -42,20 +42,21 @@ export async function POST(req: Request) {
         throw new Error("Invalid metadata from Paystack");
       }
 
-      // 1. ✅ Create the Order matching your new Collection schema
+      // 1. ✅ Create the Order matching your Collection schema
       await payload.create({
         collection: "orders",
         data: {
           tenant: metadata.tenantId,
           user: metadata.userId,
+          // Extract product IDs for the relationship field
           products: metadata.products.map((p) => p.id),
-          // Using the new 'items' array from your Orders collection
+          // Detailed line items
           items: metadata.products.map((p) => ({
             productName: p.name,
             variantId: p.variantId || undefined,
-            /* ✅ THE FIX: Map the variantName from metadata to the Order record */
             variantName: p.variantName || undefined, 
             priceAtPurchase: p.price,
+            quantity: p.quantity || 1, // ✅ Ensure quantity is stored in the order
           })),
           paystackReference: data.reference,
           paystackTransactionId: String(data.id),
@@ -64,8 +65,10 @@ export async function POST(req: Request) {
         },
       });
 
-      // 2. ✅ STOCK REDUCTION LOGIC
+      // 2. ✅ UPDATED STOCK REDUCTION LOGIC
       for (const item of metadata.products) {
+        // We only reduce stock if it's a variant or if the product tracks stock
+        // For this logic, we'll focus on the variant stock as per your schema
         if (item.variantId) {
           try {
             const product = await payload.findByID({
@@ -78,9 +81,11 @@ export async function POST(req: Request) {
               const updatedVariants = product.variants.map((v: any) => {
                 if (v.id === item.variantId) {
                   const currentStock = v.stock || 0;
+                  const quantityPurchased = item.quantity || 1; // ✅ Fallback to 1 if missing
+                  
                   return {
                     ...v,
-                    stock: Math.max(0, currentStock - 1),
+                    stock: Math.max(0, currentStock - quantityPurchased), // ✅ Subtract actual quantity
                   };
                 }
                 return v;
@@ -93,7 +98,7 @@ export async function POST(req: Request) {
                   variants: updatedVariants,
                 },
               });
-              console.log(`📉 Stock reduced for product ${item.id}, variant ${item.variantId}`);
+              console.log(`📉 Stock reduced by ${item.quantity || 1} for product ${item.id}, variant ${item.variantId}`);
             }
           } catch (stockErr) {
             console.error(`❌ Failed to update stock for product ${item.id}:`, stockErr);

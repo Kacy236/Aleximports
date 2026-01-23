@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
@@ -71,7 +71,8 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                 }
             }
             
-            return acc + price;
+            // ✅ Multiply by quantity for the correct sidebar total
+            return acc + (price * cartItem.quantity);
         }, 0);
     }, [data?.docs, items]);
 
@@ -133,7 +134,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                                 const variant = (product as any).variants?.find((v: any) => v.id === cartItem.variantId);
                                 if (variant?.variantPrice) displayPrice = variant.variantPrice;
                                 
-                                // ✅ Construct the name for the UI
                                 variantDisplayName = [variant?.color, variant?.size].filter(Boolean).join(" / ");
                             }
 
@@ -143,12 +143,12 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                                     isLast={index === items.length - 1}
                                     imageUrl={imageObject?.url}
                                     name={product.name}
-                                    /* ✅ Pass variant name to the item component */
                                     variantName={variantDisplayName} 
                                     productUrl={`${generateTenantURL(product.tenant.slug)}/products/${product.id}`}
                                     tenantUrl={generateTenantURL(product.tenant.slug)}
                                     tenantName={product.tenant.name}
                                     price={displayPrice}
+                                    /* ✅ Ensure the CheckoutItem displays quantity if your component supports it */
                                     onRemove={() => removeProduct(cartItem.productId, cartItem.variantId)}
                                 />
                             );
@@ -161,7 +161,6 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                         total={totalAmount} 
                         onPurchase={() => purchase.mutate({ 
                             tenantSlug, 
-                            /* ✅ Updated map to include variantName for the backend/Paystack */
                             cartItems: items.map(i => {
                                 const product = data.docs.find(p => p.id === i.productId);
                                 let vName = "";
@@ -173,7 +172,8 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
                                 return { 
                                     productId: i.productId, 
                                     variantId: i.variantId,
-                                    variantName: vName || "Standard" 
+                                    variantName: vName || "Standard",
+                                    quantity: i.quantity // ✅ FIXED: Including mandatory quantity
                                 };
                             }) 
                         })}

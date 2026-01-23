@@ -1,6 +1,6 @@
 import z from "zod";
 import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
-import { Media, Tenant } from "@/payload-types";
+import { Media, Tenant, Product } from "@/payload-types";
 import { DEFAULT_LIMIT } from "@/constants";
 import { TRPCError } from "@trpc/server";
 
@@ -58,17 +58,23 @@ export const libraryRouter = createTRPCRouter({
       /**
        * ✅ UPDATED VARIANT DETECTION
        * We first look for the pre-formatted 'variantName' we stored during checkout.
-       * If that's missing, we fall back to calculating it from the variant ID.
        */
       let purchasedVariantName: string | null = null;
 
-      const orderItem = (order as any).items?.find(
-        (item: any) => 
-          (typeof item.product === 'object' ? item.product.id : item.product) === input.productId
-      );
+      // Handle the 'items' array on the order
+      const items = (order as any).items || [];
+      
+      const orderItem = items.find((item: any) => {
+        // Handle cases where item.product might be an object or a string ID
+        const productIdOnOrder = typeof item.product === 'object' 
+          ? item.product.id 
+          : item.product;
+          
+        return productIdOnOrder === input.productId;
+      });
 
       if (orderItem) {
-        // 1. Check if we have the new variantName field directly
+        // 1. Use stored variantName from checkout
         if (orderItem.variantName) {
           purchasedVariantName = orderItem.variantName;
         } 
@@ -111,8 +117,13 @@ export const libraryRouter = createTRPCRouter({
         },
       });
 
-      const productIds = ordersData.docs.flatMap((order: any) => order.products || []);
-      const uniqueProductIds = [...new Set(productIds)];
+      // ✅ Safe extraction of IDs
+      const productIds = ordersData.docs.flatMap((order: any) => {
+        const ids = order.products || [];
+        return Array.isArray(ids) ? ids : [ids];
+      });
+      
+      const uniqueProductIds = [...new Set(productIds.filter(Boolean))] as string[];
 
       if (uniqueProductIds.length === 0) {
         return { totalDocs: 0, nextPage: null, hasNextPage: false, docs: [] };
@@ -151,7 +162,8 @@ export const libraryRouter = createTRPCRouter({
         hasNextPage: ordersData.hasNextPage,
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
-          images: doc.images,
+          // ✅ Casting to ensure the UI gets the expected shape
+          images: doc.images || [],
           tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };

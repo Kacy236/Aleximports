@@ -15,18 +15,19 @@ import {
     ShieldCheck, 
     Truck, 
     RefreshCcw,
-    ShoppingCart
+    ShoppingCart,
+    Minus,
+    Plus
 } from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useState, useMemo, useEffect, Fragment, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { Progress } from "@/components/ui/progress";
 import { Media, Tenant } from "@/payload-types";
 
 /**
@@ -59,12 +60,13 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
+    const [quantity, setQuantity] = useState(1);
 
     // --- REFS FOR SWIPE GESTURES ---
     const touchStartX = useRef<number | null>(null);
     const touchEndX = useRef<number | null>(null);
 
-    // Ensure client-side only rendering for sensitive parts
+    // Ensure client-side only rendering
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -88,39 +90,25 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     }, [images.length]);
 
-    // --- ADVANCED TOUCH HANDLERS ---
+    // --- TOUCH HANDLERS ---
     const minSwipeDistance = 50;
-
     const onTouchStart = (e: React.TouchEvent) => {
         touchEndX.current = null;
         const firstTouch = e.targetTouches[0];
-        if (firstTouch) {
-            touchStartX.current = firstTouch.clientX;
-        }
+        if (firstTouch) touchStartX.current = firstTouch.clientX;
     };
-
     const onTouchMove = (e: React.TouchEvent) => {
         const moveTouch = e.targetTouches[0];
-        if (moveTouch) {
-            touchEndX.current = moveTouch.clientX;
-        }
+        if (moveTouch) touchEndX.current = moveTouch.clientX;
     };
-
     const onTouchEnd = () => {
         if (!touchStartX.current || !touchEndX.current) return;
-        
         const distance = touchStartX.current - touchEndX.current;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe) {
-            nextImage();
-        } else if (isRightSwipe) {
-            prevImage();
-        }
+        if (distance > minSwipeDistance) nextImage();
+        else if (distance < -minSwipeDistance) prevImage();
     };
 
-    // --- WINDOW EVENTS (KEYBOARD & SCROLL) ---
+    // --- KEYBOARD & SCROLL ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isLightboxOpen) return;
@@ -128,29 +116,45 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             if (e.key === "ArrowLeft") prevImage();
             if (e.key === "Escape") setIsLightboxOpen(false);
         };
-
         if (isLightboxOpen) {
             document.body.style.overflow = "hidden";
             window.addEventListener("keydown", handleKeyDown);
         } else {
             document.body.style.overflow = "unset";
         }
-
         return () => {
             document.body.style.overflow = "unset";
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [isLightboxOpen, nextImage, prevImage]);
 
-    // --- VARIANT LOGIC ENGINE ---
+    // --- VARIANT LOGIC ENGINE (FIXED TS ERRORS) ---
     const activeVariant = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return null;
-        return data.variants.find((v: any) => {
+        // Cast to any[] to allow access to 'color', 'size', and 'stock'
+        return (data.variants as any[]).find((v) => {
             const colorMatch = selectedColor ? v.color === selectedColor : true;
             const sizeMatch = selectedSize ? v.size === selectedSize : true;
             return colorMatch && sizeMatch;
         });
     }, [data?.variants, data?.hasVariants, selectedColor, selectedSize]);
+
+    useEffect(() => {
+        setQuantity(1);
+    }, [selectedColor, selectedSize]);
+
+    const maxStock = useMemo(() => {
+        if (data?.hasVariants) return (activeVariant as any)?.stock ?? 0;
+        return (data as any)?.stock ?? 99; // Cast data to any for root stock access
+    }, [data, activeVariant]);
+
+    const handleIncrement = () => {
+        if (quantity < maxStock) setQuantity(prev => prev + 1);
+    };
+
+    const handleDecrement = () => {
+        if (quantity > 1) setQuantity(prev => prev - 1);
+    };
 
     const currentDisplayImage = useMemo(() => {
         if (!data) return "/placeholder.png";
@@ -172,15 +176,14 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const tenant = data?.tenant as (Tenant & { image?: Media }) | undefined;
     const tenantImage = tenant?.image;
 
-    // --- OPTION CALCULATIONS ---
     const allPossibleColors = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
-        return Array.from(new Set(data.variants.map((v: any) => v.color).filter(Boolean))) as string[];
+        return Array.from(new Set((data.variants as any[]).map((v) => v.color).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
     const allPossibleSizes = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
-        return Array.from(new Set(data.variants.map((v: any) => v.size).filter(Boolean))) as string[];
+        return Array.from(new Set((data.variants as any[]).map((v) => v.size).filter(Boolean))) as string[];
     }, [data?.variants, data?.hasVariants]);
 
     if (!isMounted) return <ProductViewSkeleton />;
@@ -282,7 +285,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 {/* --- CONTENT GRID --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-6 divide-y-2 lg:divide-y-0 lg:divide-x-2 divide-black">
                     
-                    {/* --- LEFT COLUMN: DETAILS & VARIANTS --- */}
+                    {/* --- LEFT COLUMN --- */}
                     <div className="col-span-4 flex flex-col">
                         <div className="p-6 sm:p-8 lg:p-12">
                             <div className="flex flex-col gap-2">
@@ -341,7 +344,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
                                 <div className="flex flex-wrap gap-1">
                                     {allPossibleColors.map((color) => {
-                                        const colorVar = data.variants?.find((v: any) => v.color === color);
+                                        const colorVar = (data.variants as any[])?.find((v) => v.color === color);
                                         const vImg = (colorVar?.variantImage as Media)?.url;
                                         const stock = colorVar?.stock ?? 0;
                                         const isSelected = selectedColor === color;
@@ -415,16 +418,44 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         </div>
                     </div>
 
-                    {/* --- RIGHT COLUMN: ACTIONS & STATS --- */}
+                    {/* --- RIGHT COLUMN --- */}
                     <div className="col-span-2 flex flex-col bg-neutral-50/30">
                         <div className="p-8 space-y-8 sticky top-0">
                             <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Select Quantity</span>
+                                    <div className="flex items-center border-2 border-black h-14 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                        <button 
+                                            onClick={handleDecrement}
+                                            disabled={quantity <= 1}
+                                            className="h-full px-4 hover:bg-neutral-100 border-r-2 border-black transition-colors disabled:opacity-30 cursor-pointer"
+                                        >
+                                            <Minus size={16} strokeWidth={3} />
+                                        </button>
+                                        <div className="flex-1 flex items-center justify-center font-black text-lg select-none">
+                                            {quantity}
+                                        </div>
+                                        <button 
+                                            onClick={handleIncrement}
+                                            disabled={quantity >= maxStock}
+                                            className="h-full px-4 hover:bg-neutral-100 border-l-2 border-black transition-colors disabled:opacity-30 cursor-pointer"
+                                        >
+                                            <Plus size={16} strokeWidth={3} />
+                                        </button>
+                                    </div>
+                                    {maxStock <= 5 && maxStock > 0 && (
+                                        <p className="text-[10px] font-black text-orange-600 uppercase">Only {maxStock} remaining!</p>
+                                    )}
+                                </div>
+
                                 <CartButton 
                                     productId={productId} 
                                     tenantSlug={tenantSlug} 
                                     variantId={activeVariant?.id}
-                                    disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
+                                    quantity={quantity}
+                                    disabled={!!(data.hasVariants && (!activeVariant || (activeVariant as any).stock === 0))}
                                 />
+                                
                                 <button 
                                     onClick={() => {
                                         setIsCopied(true);
@@ -460,10 +491,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                             <div className="flex-1 h-3 border-2 border-black bg-white overflow-hidden">
                                                 <div 
                                                     className="h-full bg-green-500 border-r-2 border-black transition-all duration-1000" 
-                                                    style={{ width: `${data.ratingDistribution?.[stars] ?? 0}%` }} 
+                                                    style={{ width: `${(data as any).ratingDistribution?.[stars] ?? 0}%` }} 
                                                 />
                                             </div>
-                                            <span className="text-[10px] font-bold w-8 text-right">{data.ratingDistribution?.[stars] ?? 0}%</span>
+                                            <span className="text-[10px] font-bold w-8 text-right">{(data as any).ratingDistribution?.[stars] ?? 0}%</span>
                                         </div>
                                     ))}
                                 </div>
@@ -482,7 +513,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                     <div>
                                         <p className="text-xs font-black uppercase tracking-tight">Return Policy</p>
                                         <p className="text-[10px] text-neutral-500 font-bold uppercase leading-tight">
-                                            {data.refundPolicy === "no-refunds" ? "All sales final. No returns." : "30-Day Money Back Guarantee."}
+                                            {(data as any).refundPolicy === "no-refunds" ? "All sales final. No returns." : "30-Day Money Back Guarantee."}
                                         </p>
                                     </div>
                                 </div>
@@ -502,29 +533,19 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     );
 };
 
-// --- COMPREHENSIVE SKELETON LOADER ---
+// --- SKELETON LOADER ---
 export const ProductViewSkeleton = () => {
     return (
         <div className="px-0 sm:px-4 lg:px-12 py-0 sm:py-10 animate-pulse bg-neutral-50">
             <div className="max-w-[1600px] mx-auto border-y-2 sm:border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
                 <div className="w-full h-[400px] sm:h-[600px] bg-neutral-200" />
                 <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-neutral-100">
-                    <div className="col-span-4 p-8 sm:p-12 space-y-8">
-                        <div className="h-10 sm:h-16 w-3/4 bg-neutral-200 rounded-sm" />
-                        <div className="h-20 w-full bg-neutral-100 rounded-sm" />
-                        <div className="space-y-4">
-                            <div className="h-6 w-1/4 bg-neutral-200 rounded-sm" />
-                            <div className="flex gap-4">
-                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
-                                <div className="size-20 sm:size-24 bg-neutral-200 rounded-sm" />
-                            </div>
-                        </div>
+                    <div className="col-span-4 p-12 space-y-6">
+                        <div className="h-20 w-3/4 bg-neutral-200" />
+                        <div className="h-10 w-1/4 bg-neutral-200" />
                     </div>
-                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6 hidden lg:block">
-                        <div className="h-14 w-full bg-neutral-200 rounded-sm" />
-                        <div className="h-14 w-full bg-neutral-200 rounded-sm" />
-                        <div className="h-40 w-full bg-neutral-100 rounded-sm" />
+                    <div className="col-span-2 p-8 bg-neutral-50">
+                        <div className="h-64 w-full bg-neutral-200" />
                     </div>
                 </div>
             </div>

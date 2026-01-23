@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { useShallow } from "zustand/react/shallow";
-
-import { useCartStore, CartItem } from "../store/use-cart-store";
+import { useCartStore } from "../store/use-cart-store";
 
 export const useCart = (tenantSlug: string) => {
     const addProduct = useCartStore((state) => state.addProduct);
@@ -9,16 +8,15 @@ export const useCart = (tenantSlug: string) => {
     const clearCart = useCartStore((state) => state.clearCart);
     const clearAllCarts = useCartStore((state) => state.clearAllCarts);
 
-    // ✅ Now tracking 'items' objects including productId, variantId, and variantName
     const items = useCartStore(
         useShallow(
-            (state) =>
-                state.tenantCarts[tenantSlug]?.items || []
+            (state) => state.tenantCarts[tenantSlug]?.items || []
         )
     );
 
     const isProductInCart = useCallback(
-        (productId: string, variantId?: string) => {
+        (productId: string | undefined, variantId?: string) => {
+            if (!productId) return false; // Safety check
             return items.some(
                 (item) => item.productId === productId && item.variantId === variantId
             );
@@ -27,44 +25,47 @@ export const useCart = (tenantSlug: string) => {
     );
 
     const toggleProduct = useCallback(
-        (productId: string, variantId?: string, variantName?: string) => {
+        (productId: string | undefined, variantId?: string, variantName?: string, quantity: number = 1) => {
+            // 1. Guard check: If there's no ID, we can't do anything
+            if (!productId) return; 
+
             if (isProductInCart(productId, variantId)) {
                 removeProduct(tenantSlug, productId, variantId);
             } else {
-                // ✅ Pass variantName through toggle
-                addProduct(tenantSlug, productId, variantId, variantName);
+                // 2. TypeScript is now 100% sure productId is a string here
+                addProduct(tenantSlug, productId, variantId, variantName, quantity);
             }
         },
         [addProduct, removeProduct, isProductInCart, tenantSlug]
     );
 
-    const clearTenantCart = useCallback(() => {
-        clearCart(tenantSlug);
-    }, [tenantSlug, clearCart]);
-
     const handleAddProduct = useCallback(
-        (productId: string, variantId?: string, variantName?: string) => {
-            // ✅ Pass variantName to the store's addProduct
-            addProduct(tenantSlug, productId, variantId, variantName);
+        (productId: string | undefined, variantId?: string, variantName?: string, quantity: number = 1) => {
+            if (!productId) return; // Guard clause
+            addProduct(tenantSlug, productId, variantId, variantName, quantity);
         },
         [addProduct, tenantSlug]
     );
 
     const handleRemoveProduct = useCallback(
-        (productId: string, variantId?: string) => {
+        (productId: string | undefined, variantId?: string) => {
+            if (!productId) return; // Guard clause
             removeProduct(tenantSlug, productId, variantId);
         },
         [removeProduct, tenantSlug]
     );
 
+    const totalQuantity = items.reduce((acc, item) => acc + (item.quantity || 1), 0);
+
     return {
-        items, // Returns the array of { productId, variantId, variantName }
+        items,
         addProduct: handleAddProduct,
         removeProduct: handleRemoveProduct,
-        clearCart: clearTenantCart,
+        clearCart: () => clearCart(tenantSlug),
         clearAllCarts,
         toggleProduct,
         isProductInCart,
         totalItems: items.length,
+        totalQuantity,
     };
 };

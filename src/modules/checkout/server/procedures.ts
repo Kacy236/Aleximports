@@ -8,7 +8,7 @@ import { generateTenantURL } from "@/lib/utils";
 
 /**
  * Checkout router
- * Includes Variant-aware pricing and the full auto-subaccount creation logic.
+ * Includes Variant-aware pricing, Quantity support, and full auto-subaccount creation logic.
  */
 
 export const checkoutRouter = createTRPCRouter({
@@ -148,7 +148,7 @@ export const checkoutRouter = createTRPCRouter({
   }),
 
   /**
-   * PURCHASE: initialize Paystack transaction with Variant Logic
+   * PURCHASE: initialize Paystack transaction with Variant & Quantity Logic
    */
   purchase: protectedProcedure
     .input(
@@ -156,7 +156,8 @@ export const checkoutRouter = createTRPCRouter({
         cartItems: z.array(z.object({
           productId: z.string(),
           variantId: z.string().optional(),
-          variantName: z.string().optional() // ✅ Added fix
+          variantName: z.string().optional(),
+          quantity: z.number().min(1) // ✅ NEW: Track quantity
         })).min(1),
         tenantSlug: z.string().min(1),
       })
@@ -245,13 +246,15 @@ export const checkoutRouter = createTRPCRouter({
         }
       }
 
-      // --- CALCULATE DYNAMIC TOTAL BASED ON VARIANTS ---
+      // --- CALCULATE DYNAMIC TOTAL BASED ON VARIANTS & QUANTITY ---
       let totalAmountInKobo = 0;
-      const metadataProducts: ProductMetadata[] = [];
+      const metadataProducts: any[] = [];
 
       for (const cartItem of input.cartItems) {
         const product = products.docs.find(p => p.id === cartItem.productId) as unknown as Product;
-        if (!product) continue;
+        
+        // ✅ FIX: Ensure product and product.id exist to satisfy "string" requirement
+        if (!product || !product.id) continue;
 
         let priceToCharge = Number(product.price || 0);
 
@@ -263,14 +266,18 @@ export const checkoutRouter = createTRPCRouter({
           }
         }
 
-        totalAmountInKobo += (priceToCharge * 100);
+        // ✅ THE CALCULATION: (Price * 100) * Quantity
+        const lineItemTotal = (priceToCharge * 100) * cartItem.quantity;
+        totalAmountInKobo += lineItemTotal;
+
         metadataProducts.push({
-          id: product.id,
+          id: product.id, // ✅ Now guaranteed to be a string
           name: product.name,
           price: priceToCharge,
+          quantity: cartItem.quantity, // ✅ Pass to metadata
           variantId: cartItem.variantId,
-          variantName: cartItem.variantName // ✅ THE FIX: mapped from input
-        } as any);
+          variantName: cartItem.variantName 
+        });
       }
 
       if (totalAmountInKobo <= 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid amount" });
@@ -342,7 +349,11 @@ export const checkoutRouter = createTRPCRouter({
         totalPrice,
         docs: data.docs.map((doc) => ({
           ...doc,
-          images: doc.images,
+          // Mapping images for checkout consistency
+          images: doc.images?.map((item: any) => ({
+            ...item,
+            image: item.image as Media,
+          })) || [],
           tenant: doc.tenant as Tenant & { image: Media | null },
         })),
       };

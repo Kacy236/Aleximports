@@ -8,7 +8,6 @@ import { ReviewSidebar } from "../components/review-sidebar";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 import { Suspense } from "react";
 import { ReviewFormSkeleton } from "../components/review-form";
-import { cn } from "@/lib/utils";
 
 interface Props {
     productId: string;
@@ -17,7 +16,7 @@ interface Props {
 export const ProductView = ({ productId }: Props) => {
     const trpc = useTRPC();
     
-    // We fetch the library item which should include purchase details
+    // ✅ This correctly uses the getOne we updated in the library router
     const { data } = useSuspenseQuery(trpc.library.getOne.queryOptions({
         productId,
     }));
@@ -42,13 +41,11 @@ export const ProductView = ({ productId }: Props) => {
                             {data.name}
                         </h1>
                         
-                        {/* Display the specific option purchased. 
-                          This helps users identify which 'Variant' this content belongs to.
-                        */}
+                        {/* ✅ The "Purchased Variant" Badge */}
                         {data.purchasedVariant && (
-                            <div className="flex items-center gap-2 text-neutral-500 font-medium">
-                                <span className="text-sm px-2 py-0.5 bg-neutral-200 rounded text-neutral-700">
-                                    Purchased: {data.purchasedVariant}
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs uppercase tracking-wider px-2 py-1 bg-neutral-900 text-white rounded font-bold">
+                                    Variant: {data.purchasedVariant}
                                 </span>
                             </div>
                         )}
@@ -59,7 +56,7 @@ export const ProductView = ({ productId }: Props) => {
             <section className="max-w-(--breakpoint-xl) mx-auto px-4 lg:px-12 py-10">
                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-8 lg:gap-16">
                     
-                    {/* Left Column: Sidebar Actions/Reviews */}
+                    {/* Left Column: Reviews */}
                     <div className="lg:col-span-2 order-2 lg:order-1">
                         <div className="sticky top-6 space-y-4">
                             <div className="p-6 bg-white rounded-md border shadow-sm border-neutral-200">
@@ -76,12 +73,13 @@ export const ProductView = ({ productId }: Props) => {
 
                     {/* Right Column: Main Content */}
                     <div className="lg:col-span-5 order-1 lg:order-2">
-                        <div className="prose prose-neutral max-w-none">
+                        {/* ✅ prose-xl makes the content much more readable for library items */}
+                        <div className="prose prose-neutral prose-lg max-w-none">
                             {data.content ? (
-                                <RichText data={data.content} />
+                                <RichText data={data.content as any} />
                             ) : (
-                                <div className="p-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center">
-                                    <p className="font-medium italic text-muted-foreground">
+                                <div className="p-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center bg-neutral-50">
+                                    <p className="font-medium italic text-neutral-400">
                                         This product doesn't have any additional library content yet.
                                     </p>
                                 </div>

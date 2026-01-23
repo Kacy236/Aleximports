@@ -3,6 +3,7 @@ export type PaystackProductMetadata = {
   id: string;
   name: string;
   price: number;
+  quantity: number;
   variantId?: string;
   variantName?: string;
 };
