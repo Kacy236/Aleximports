@@ -3,7 +3,19 @@
 import { StarRating } from "@/components/star-rating";
 import { Button } from "@/components/ui/button";
 import dynamic from "next/dynamic";
-import { LinkIcon, StarIcon, CheckIcon, ChevronLeft, ChevronRight, X, Maximize2, AlertCircle } from "lucide-react";
+import { 
+    LinkIcon, 
+    StarIcon, 
+    CheckIcon, 
+    ChevronLeft, 
+    ChevronRight, 
+    X, 
+    Maximize2, 
+    AlertCircle, 
+    ShieldCheck, 
+    Truck, 
+    RefreshCcw 
+} from "lucide-react";
 import { formatCurrency, generateTenantURL, cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState, useMemo, useEffect, Fragment, useCallback, useRef } from "react";
@@ -16,11 +28,19 @@ import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { Media, Tenant } from "@/payload-types";
 
+/**
+ * Dynamic import for CartButton to prevent hydration mismatch 
+ * on stock-sensitive UI elements.
+ */
 const CartButton = dynamic(
     () => import("../components/cart-button").then((mod) => mod.CartButton),
     {
         ssr: false,
-        loading: () => <Button disabled className="flex-1 bg-green-500">Add to Cart</Button>
+        loading: () => (
+            <Button disabled className="flex-1 bg-green-500 h-12">
+                Loading Cart...
+            </Button>
+        )
     },
 );
 
@@ -30,28 +50,32 @@ interface ProductViewProps {
 }
 
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
+    // --- COMPONENT STATE ---
     const [isMounted, setIsMounted] = useState(false);
     const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-    
-    // Swipe tracking refs for mobile gallery navigation
-    const touchStartX = useRef<number | null>(null);
-    const touchEndX = useRef<number | null>(null);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    const trpc = useTRPC();
-    const { data } = useSuspenseQuery(trpc.products.getOne.queryOptions({ id: productId }));
-
     const [isCopied, setIsCopied] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
 
+    // --- REFS FOR SWIPE GESTURES ---
+    const touchStartX = useRef<number | null>(null);
+    const touchEndX = useRef<number | null>(null);
+
+    // Ensure client-side only rendering for sensitive parts
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // --- DATA FETCHING ---
+    const trpc = useTRPC();
+    const { data } = useSuspenseQuery(
+        trpc.products.getOne.queryOptions({ id: productId })
+    );
+
     const images = useMemo(() => data?.images || [], [data?.images]);
 
-    // --- NAVIGATION LOGIC ---
+    // --- GALLERY NAVIGATION ---
     const nextImage = useCallback(() => {
         if (images.length <= 1) return;
         setSelectedImageIndex((prev) => (prev + 1) % images.length);
@@ -62,7 +86,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         setSelectedImageIndex((prev) => (prev - 1 + images.length) % images.length);
     }, [images.length]);
 
-    // --- TOUCH SWIPE LOGIC ---
+    // --- ADVANCED TOUCH HANDLERS ---
     const minSwipeDistance = 50;
 
     const onTouchStart = (e: React.TouchEvent) => {
@@ -81,17 +105,20 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     };
 
     const onTouchEnd = () => {
-        if (touchStartX.current === null || touchEndX.current === null) return;
+        if (!touchStartX.current || !touchEndX.current) return;
         
         const distance = touchStartX.current - touchEndX.current;
         const isLeftSwipe = distance > minSwipeDistance;
         const isRightSwipe = distance < -minSwipeDistance;
 
-        if (isLeftSwipe) nextImage();
-        if (isRightSwipe) prevImage();
+        if (isLeftSwipe) {
+            nextImage();
+        } else if (isRightSwipe) {
+            prevImage();
+        }
     };
 
-    // --- KEYBOARD & SCROLL LOCK ---
+    // --- WINDOW EVENTS (KEYBOARD & SCROLL) ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isLightboxOpen) return;
@@ -113,7 +140,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
         };
     }, [isLightboxOpen, nextImage, prevImage]);
 
-    // --- VARIANT & PRICE LOGIC ---
+    // --- VARIANT LOGIC ENGINE ---
     const activeVariant = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return null;
         return data.variants.find((v: any) => {
@@ -143,6 +170,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     const tenant = data?.tenant as (Tenant & { image?: Media }) | undefined;
     const tenantImage = tenant?.image;
 
+    // --- OPTION CALCULATIONS ---
     const allPossibleColors = useMemo(() => {
         if (!data?.hasVariants || !data?.variants) return [];
         return Array.from(new Set(data.variants.map((v: any) => v.color).filter(Boolean))) as string[];
@@ -167,7 +195,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     if (!data) return null;
 
     return (
-        <div className="px-4 lg:px-12 py-10">
+        <div className="px-4 lg:px-12 py-10 min-h-screen bg-neutral-50/20">
             {/* --- LIGHTBOX OVERLAY --- */}
             {isLightboxOpen && (
                 <div 
@@ -180,7 +208,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 z-[110] cursor-pointer"
                         onClick={() => setIsLightboxOpen(false)}
                     >
-                        <X size={40} />
+                        <X size={44} />
                     </button>
 
                     {images.length > 1 && (
@@ -189,18 +217,18 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                 onClick={(e) => { e.stopPropagation(); prevImage(); }}
                                 className="absolute left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110 cursor-pointer"
                             >
-                                <ChevronLeft size={48} />
+                                <ChevronLeft size={60} strokeWidth={1} />
                             </button>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); nextImage(); }}
                                 className="absolute right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white p-4 z-[110] transition-all hover:scale-110 cursor-pointer"
                             >
-                                <ChevronRight size={48} />
+                                <ChevronRight size={60} strokeWidth={1} />
                             </button>
                         </div>
                     )}
                     
-                    <div className="relative w-full h-full max-w-6xl max-h-[80vh] mx-4 pointer-events-none select-none">
+                    <div className="relative w-full h-full max-w-7xl max-h-[85vh] mx-4 pointer-events-none select-none">
                         <Image
                             src={currentDisplayImage}
                             alt={data?.name || "Full screen view"}
@@ -209,19 +237,13 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             quality={100}
                         />
                     </div>
-                    
-                    <div className="mt-6 text-center select-none">
-                        <p className="text-white font-medium text-lg">{data.name}</p>
-                        <p className="text-white/40 text-sm mt-1 uppercase tracking-widest">
-                            {images.length > 1 ? `${selectedImageIndex + 1} / ${images.length}` : ""}
-                        </p>
-                    </div>
                 </div>
             )}
 
-            <div className="border rounded-sm bg-white overflow-hidden">
+            <div className="max-w-[1600px] mx-auto border-2 border-black rounded-sm bg-white overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                {/* --- MAIN HERO GALLERY --- */}
                 <div 
-                    className="relative group w-full h-[300px] sm:h-[400px] md:h-[600px] lg:h-[700px] xl:h-[800px] border-b bg-neutral-50 overflow-hidden"
+                    className="relative group w-full h-[400px] sm:h-[500px] md:h-[700px] lg:h-[850px] border-b-2 border-black bg-neutral-100 overflow-hidden"
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
@@ -234,12 +256,12 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                             src={currentDisplayImage}
                             alt={data?.name || "Product Image"}
                             fill
-                            className="object-contain transition-opacity duration-300"
+                            className="object-contain transition-transform duration-700 group-hover:scale-105"
                             priority
                         />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 pointer-events-none">
-                            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full border border-white/30">
-                                <Maximize2 className="text-white size-6 drop-shadow-md" />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 pointer-events-none">
+                            <div className="bg-black text-white p-4 rounded-full shadow-xl flex items-center gap-2 font-bold uppercase text-xs tracking-widest">
+                                <Maximize2 size={18} /> View Larger
                             </div>
                         </div>
                     </div>
@@ -248,269 +270,237 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                         <>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); prevImage(); }}
-                                className={cn(
-                                    "absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all",
-                                    "bg-white/90 border border-neutral-200 text-neutral-900 hidden md:flex", 
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:text-green-600"
-                                )}
+                                className="absolute left-6 top-1/2 -translate-y-1/2 z-10 p-4 rounded-full bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[52%] active:translate-x-1 active:translate-y-[-48%] transition-all cursor-pointer hidden md:flex"
                             >
-                                <ChevronLeft className="size-5 sm:size-6" />
+                                <ChevronLeft className="size-8" />
                             </button>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); nextImage(); }}
-                                className={cn(
-                                    "absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 p-2 sm:p-3 rounded-full shadow-lg transition-all",
-                                    "bg-white/90 border border-neutral-200 text-neutral-900 hidden md:flex",
-                                    "lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100",
-                                    "cursor-pointer hover:bg-white lg:hover:scale-110 lg:hover:text-green-600"
-                                )}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 z-10 p-4 rounded-full bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-[52%] active:translate-x-[-4px] active:translate-y-[-48%] transition-all cursor-pointer hidden md:flex"
                             >
-                                <ChevronRight className="size-5 sm:size-6" />
+                                <ChevronRight className="size-8" />
                             </button>
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border border-white/20">
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-2 rounded-full text-xs font-black tracking-tighter border-2 border-white">
                                 {selectedImageIndex + 1} / {images.length}
                             </div>
                         </>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-6">
-                    <div className="col-span-4">
-                        <div className="p-6">
-                            <h1 className="text-4xl font-medium">{data.name}</h1>
+                {/* --- CONTENT GRID --- */}
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-0 lg:divide-x-2 divide-black">
+                    
+                    {/* --- LEFT COLUMN: DETAILS & VARIANTS --- */}
+                    <div className="col-span-4 flex flex-col">
+                        <div className="p-8 lg:p-12">
+                            <div className="flex flex-col gap-2">
+                                <span className="text-xs font-black uppercase tracking-widest text-green-600 bg-green-50 w-fit px-2 py-1 border border-green-600">New Arrival</span>
+                                <h1 className="text-5xl lg:text-7xl font-black uppercase italic tracking-tighter text-black leading-none">
+                                    {data.name}
+                                </h1>
+                            </div>
                         </div>
                         
-                        <div className="border-y flex flex-wrap">
-                            <div className="px-6 py-4 flex items-center justify-center border-r">
-                                <div className="px-3 py-1 border bg-green-500 rounded-sm">
-                                    <p className="text-base font-bold text-white">
-                                        {formatCurrency(Number(currentPrice))}
-                                    </p>
-                                </div>
+                        <div className="border-y-2 border-black grid grid-cols-2 md:grid-cols-4 bg-white">
+                            <div className="p-6 flex flex-col items-center justify-center border-r-2 border-black">
+                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Price</span>
+                                <p className="text-2xl font-black text-black">
+                                    {formatCurrency(Number(currentPrice))}
+                                </p>
                             </div>
 
-                            <div className="px-6 py-4 flex items-center justify-center lg:border-r">
-                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group/tenant cursor-pointer">
+                            <div className="p-6 flex flex-col items-center justify-center border-r-0 md:border-r-2 border-black">
+                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Vendor</span>
+                                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2 group cursor-pointer">
                                     {tenantImage?.url && (
-                                        <Image 
-                                          src={tenantImage.url}
-                                          alt={tenant?.name || "Store"}
-                                          width={24}
-                                          height={24}
-                                          className="rounded-full border shrink-0 size-[24px]"
-                                        />
+                                        <Image src={tenantImage.url} alt="store" width={20} height={20} className="rounded-full border border-black size-5" />
                                     )}
-                                    <p className="text-base font-medium underline underline-offset-4 decoration-2 decoration-neutral-400 group-hover/tenant:decoration-green-600 transition-colors">
-                                      {tenant?.name || "Store"}  
-                                    </p>
+                                    <span className="font-bold border-b-2 border-black group-hover:bg-black group-hover:text-white transition-colors">
+                                        {tenant?.name}
+                                    </span>
                                 </Link>
                             </div>
 
-                            <div className="hidden lg:flex px-6 py-4 items-center justify-center">
-                                <div className="flex items-center gap-2">
-                                    <StarRating
-                                      rating={data.reviewRating ?? 0}
-                                      iconClassName="size-4"
-                                    />
-                                    <p className="text-base font-medium text-neutral-600">
-                                        {data.reviewCount ?? 0} ratings
-                                    </p>
+                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0 border-r-2 border-black">
+                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Rating</span>
+                                <div className="flex items-center gap-1">
+                                    <StarRating rating={data.reviewRating ?? 0} iconClassName="size-3" />
+                                    <span className="font-bold text-xs">({data.reviewCount ?? 0})</span>
                                 </div>
+                            </div>
+
+                            <div className="p-6 flex flex-col items-center justify-center border-t-2 md:border-t-0">
+                                <span className="text-[10px] font-black uppercase text-neutral-400 mb-1">Shipping</span>
+                                <span className="font-bold text-xs uppercase tracking-widest">Free Global</span>
                             </div>
                         </div>
 
+                        {/* --- VARIANT SELECTOR --- */}
                         {data.hasVariants && (
-                            <div className="p-6 border-b space-y-6 bg-neutral-50/50">
+                            <div className="p-8 lg:p-12 border-b-2 border-black space-y-10 bg-neutral-50/50">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500">Product Options</h3>
+                                    <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Color / Style</h3>
                                     {(selectedColor || selectedSize) && (
-                                        <button 
-                                            onClick={() => { setSelectedColor(null); setSelectedSize(null); }}
-                                            className="text-xs flex items-center gap-1 text-red-500 hover:text-red-600 transition-colors font-semibold cursor-pointer"
-                                        >
-                                            <X size={14}/> Reset Selection
+                                        <button onClick={() => { setSelectedColor(null); setSelectedSize(null); }} className="text-xs font-black flex items-center gap-1 text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors uppercase cursor-pointer">
+                                            <RefreshCcw size={12} /> Reset
                                         </button>
                                     )}
                                 </div>
 
-                                {allPossibleColors.length > 0 && (
-                                    <div className="space-y-4">
-                                        <h3 className="text-sm font-semibold text-neutral-800">Color / Style</h3>
-                                        <div className="flex flex-wrap gap-6">
-                                            {allPossibleColors.map((color) => {
-                                                const isAvailable = availableColors.includes(color);
-                                                const isSelected = selectedColor === color;
-                                                const colorVariant = data.variants?.find((v: any) => v.color === color);
-                                                const variantImgUrl = (colorVariant?.variantImage as Media)?.url;
-                                                const stock = colorVariant?.stock ?? 0;
-                                                const isLowStock = stock > 0 && stock <= 10;
-                                                const isSoldOut = stock === 0;
+                                <div className="flex flex-wrap gap-3">
+                                    {allPossibleColors.map((color) => {
+                                        const colorVar = data.variants?.find((v: any) => v.color === color);
+                                        const vImg = (colorVar?.variantImage as Media)?.url;
+                                        const stock = colorVar?.stock ?? 0;
+                                        const isSelected = selectedColor === color;
+                                        const isLow = stock > 0 && stock <= 10;
 
-                                                return (
-                                                    <button
-                                                        key={color}
-                                                        disabled={!isAvailable}
-                                                        onClick={() => isAvailable && setSelectedColor(color === selectedColor ? null : color)}
-                                                        className={cn(
-                                                            "group relative flex flex-col items-center gap-3 p-3 border-2 rounded-2xl transition-all duration-300 outline-none",
-                                                            isSelected 
-                                                                ? "border-green-600 bg-white scale-110 shadow-xl z-10" 
-                                                                : "border-transparent bg-white/50 hover:border-neutral-200 hover:bg-white hover:shadow-md",
-                                                            (!isAvailable || isSoldOut) && "opacity-40 grayscale cursor-not-allowed border-dashed"
-                                                        )}
-                                                    >
-                                                        {variantImgUrl && (
-                                                            <div className="relative size-28 rounded-xl overflow-hidden shadow-sm border border-neutral-100 bg-white">
-                                                                <Image 
-                                                                    src={variantImgUrl} 
-                                                                    alt={color} 
-                                                                    fill 
-                                                                    className="object-cover transition-transform duration-500 group-hover:scale-110" 
-                                                                />
-                                                                {/* --- LOW STOCK BADGE --- */}
-                                                                {isLowStock && (
-                                                                    <div className="absolute top-1 left-1 right-1 z-20">
-                                                                        <div className="bg-orange-500 text-white text-[8px] font-black uppercase py-1 px-1.5 rounded-md flex items-center justify-center gap-1 shadow-lg animate-pulse">
-                                                                            <AlertCircle size={8} /> Low Stock ({stock})
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {isSoldOut && (
-                                                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-                                                                        <span className="text-white text-[10px] font-bold uppercase tracking-tighter bg-black/60 px-2 py-1 rounded">Sold Out</span>
-                                                                    </div>
-                                                                )}
+                                        return (
+                                            <button
+                                                key={color}
+                                                onClick={() => setSelectedColor(color === selectedColor ? null : color)}
+                                                className={cn(
+                                                    "group flex flex-col items-center gap-2 p-2 border-2 transition-all duration-300 cursor-pointer",
+                                                    isSelected 
+                                                        ? "border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" 
+                                                        : "border-transparent opacity-60 hover:opacity-100 hover:border-neutral-200"
+                                                )}
+                                            >
+                                                <div className="relative size-24 border-2 border-black overflow-hidden bg-white">
+                                                    {vImg ? (
+                                                        <Image src={vImg} alt={color} fill className="object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-neutral-200 flex items-center justify-center text-[10px] font-bold uppercase">No Preview</div>
+                                                    )}
+                                                    {isLow && (
+                                                        <div className="absolute top-1 left-1 right-1 z-10">
+                                                            <div className="bg-orange-500 text-white text-[8px] font-black uppercase py-1 rounded flex items-center justify-center gap-1 shadow-lg border border-black">
+                                                                <AlertCircle size={8} /> {stock} left
                                                             </div>
-                                                        )}
-                                                        <span className={cn(
-                                                            "text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full transition-colors",
-                                                            isSelected 
-                                                                ? "bg-green-600 text-white" 
-                                                                : "bg-neutral-100 text-neutral-50 group-hover:bg-neutral-200 group-hover:text-neutral-900"
-                                                        )}>
-                                                            {color}
-                                                        </span>
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
+                                                        </div>
+                                                    )}
+                                                    {stock === 0 && <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10"><span className="text-[8px] font-black uppercase bg-black text-white px-1">Sold Out</span></div>}
+                                                </div>
+                                                <span className={cn(
+                                                    "text-[10px] font-black uppercase tracking-tighter border-2 border-black px-2 py-0.5",
+                                                    isSelected ? "bg-black text-white" : "bg-white text-black"
+                                                )}>
+                                                    {color}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
 
-                                {allPossibleSizes.length > 0 && (
-                                    <div className="space-y-3">
-                                        <h3 className="text-sm font-semibold text-neutral-800">Size / Configuration</h3>
-                                        <div className="flex flex-wrap gap-3">
-                                            {allPossibleSizes.map((size) => {
-                                                const isAvailable = availableSizes.includes(size);
-                                                const isSelected = selectedSize === size;
-                                                return (
-                                                    <button
-                                                        key={size}
-                                                        disabled={!isAvailable}
-                                                        onClick={() => setSelectedSize(size === selectedSize ? null : size)}
-                                                        className={cn(
-                                                            "px-6 py-3 border-2 rounded-lg font-medium transition-all duration-200 shadow-sm",
-                                                            "cursor-pointer active:scale-95 touch-manipulation",
-                                                            isSelected 
-                                                                ? "bg-green-600 text-white border-green-700 ring-4 ring-green-500/10 scale-105 shadow-md" 
-                                                                : "bg-white text-neutral-900 border-neutral-200 hover:border-green-500 hover:text-green-600",
-                                                            !isAvailable && "opacity-25 cursor-not-allowed border-dashed grayscale"
-                                                        )}
-                                                    >
-                                                        {size}
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
+                                <div className="space-y-4 pt-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest border-l-4 border-black pl-3">Size</h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {allPossibleSizes.map((size) => {
+                                            const isSelected = selectedSize === size;
+                                            return (
+                                                <button
+                                                    key={size}
+                                                    onClick={() => setSelectedSize(size === selectedSize ? null : size)}
+                                                    className={cn(
+                                                        "px-6 py-3 border-2 font-black text-sm uppercase transition-all cursor-pointer",
+                                                        isSelected 
+                                                            ? "bg-black text-white border-black shadow-[4px_4px_0px_0px_rgba(22,163,74,1)]" 
+                                                            : "bg-white text-black border-black hover:bg-neutral-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none"
+                                                    )}
+                                                >
+                                                    {size}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
 
-                        <div className="p-6">
-                            {data.description ? (
-                                <RichText data={data.description}/>
-                            ): (
-                                <p className="font-medium text-muted-foreground italic">No description provided</p>
-                            )}
+                        <div className="p-8 lg:p-12 prose prose-neutral max-w-none">
+                            <h3 className="text-xl font-black uppercase tracking-tighter mb-6">Product Story</h3>
+                            {data.description ? <RichText data={data.description} /> : <p className="italic">No description available.</p>}
                         </div>
                     </div>
 
-                    <div className="col-span-2">
-                        <div className="border-t lg:border-t-0 lg:border-l h-full">
-                            <div className="flex flex-col gap-4 p-6 border-b sticky top-0 bg-white z-20 shadow-sm lg:shadow-none">
-                                <div className="flex flex-row items-center gap-2">
-                                      <CartButton
-                                        productId={productId}
-                                        tenantSlug={tenantSlug}
-                                        variantId={activeVariant?.id} 
-                                        disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
-                                      />
-                                    <button
-                                      className={cn(
-                                        "size-12 flex items-center justify-center border rounded-md transition-all shadow-sm cursor-pointer",
-                                        isCopied ? "bg-green-600 text-white border-green-700" : "bg-white hover:bg-neutral-50 active:scale-90"
-                                      )}
-                                      onClick={() => {
-                                          setIsCopied(true);
-                                          navigator.clipboard.writeText(window.location.href);
-                                          toast.success("Link copied to clipboard!");
-                                          setTimeout(() => setIsCopied(false), 2000);
-                                      }}
-                                    >
-                                        {isCopied ? <CheckIcon className="size-5"/> : <LinkIcon className="size-5" />}
-                                    </button>
-                                </div>
-                                <p className="text-center font-medium text-neutral-600 text-sm">
-                                    {data.refundPolicy === "no-refunds" ? "Final Sale - No refunds" : `${data.refundPolicy?.replace('-',' ') ?? 'Standard'} return policy`}
-                                </p>
-                            </div>
-
-                            <div className="p-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-xl font-medium">Customer Reviews</h3>
-                                    <div className="flex items-center gap-x-1 font-bold text-base">
-                                        <StarIcon className="size-4 fill-green-500 text-green-500" />
-                                        <p>{(data.reviewRating ?? 0).toFixed(1)}</p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-[auto_1fr_auto] gap-3 mt-6 items-center">
-                                {[5, 4, 3, 2, 1].map((stars) => (
-                                    <Fragment key={stars}>
-                                        <div className="font-medium text-sm text-neutral-500">{stars}★</div>
-                                        <Progress 
-                                            value={data.ratingDistribution?.[stars] ?? 0} 
-                                            className="h-2 bg-neutral-100" 
-                                        />
-                                        <div className="font-medium text-sm text-neutral-400 w-8 text-right">
-                                            {data.ratingDistribution?.[stars] ?? 0}%
-                                        </div>
-                                    </Fragment>
-                                ))}
-                                </div>
-                            </div>
-
-                            <div className="p-6 border-t bg-neutral-50/30">
-                                <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">Product Details</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-neutral-500">Brand</span>
-                                        <span className="font-medium">{tenant?.name}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-neutral-500">Availability</span>
-                                        <span className={cn("font-medium", (activeVariant?.stock ?? 0) > 0 ? "text-green-600" : "text-red-500")}>
-                                            {(activeVariant?.stock ?? 0) > 0 ? `In Stock (${activeVariant?.stock})` : "Out of Stock"}
-                                        </span>
-                                    </div>
-                                    {activeVariant?.sku && (
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-neutral-500">SKU</span>
-                                            <span className="font-mono text-xs uppercase text-neutral-400">{activeVariant.sku}</span>
-                                        </div>
+                    {/* --- RIGHT COLUMN: ACTIONS & STATS --- */}
+                    <div className="col-span-2 flex flex-col bg-neutral-50/30">
+                        <div className="p-8 space-y-8 sticky top-0">
+                            <div className="flex flex-col gap-4">
+                                <CartButton 
+                                    productId={productId} 
+                                    tenantSlug={tenantSlug} 
+                                    variantId={activeVariant?.id}
+                                    // Fix: using !! to force boolean type for TypeScript
+                                    disabled={!!(data.hasVariants && (!activeVariant || activeVariant.stock === 0))}
+                                />
+                                <button 
+                                    onClick={() => {
+                                        setIsCopied(true);
+                                        navigator.clipboard.writeText(window.location.href);
+                                        toast.success("Link copied!");
+                                        setTimeout(() => setIsCopied(false), 2000);
+                                    }}
+                                    className={cn(
+                                        "w-full h-14 border-2 border-black flex items-center justify-center gap-3 font-black uppercase text-sm transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-1 active:translate-y-1 cursor-pointer",
+                                        isCopied ? "bg-green-600 text-white border-green-700" : "bg-white hover:bg-neutral-50"
                                     )}
+                                >
+                                    {isCopied ? <CheckIcon size={20} /> : <LinkIcon size={20} />}
+                                    {isCopied ? "Copied" : "Share Product"}
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Customer Reviews</h4>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-4xl font-black italic tracking-tighter">{(data.reviewRating ?? 0).toFixed(1)}</span>
+                                        <div className="flex flex-col">
+                                            <StarRating rating={data.reviewRating ?? 0} />
+                                            <span className="text-[10px] font-bold text-neutral-500 uppercase">{data.reviewCount} total reviews</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2 pt-2">
+                                    {[5, 4, 3, 2, 1].map((stars) => (
+                                        <div key={stars} className="flex items-center gap-3">
+                                            <span className="text-xs font-black w-4">{stars}</span>
+                                            <div className="flex-1 h-3 border-2 border-black bg-white overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-green-500 border-r-2 border-black transition-all duration-1000" 
+                                                    style={{ width: `${data.ratingDistribution?.[stars] ?? 0}%` }} 
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-bold w-8 text-right">{data.ratingDistribution?.[stars] ?? 0}%</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-2 border-black bg-white space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+                                <div className="flex items-start gap-4">
+                                    <Truck size={20} className="shrink-0 mt-1" />
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-tight">Express Delivery</p>
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase leading-tight">Ships within 24-48 hours from the warehouse.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <RefreshCcw size={20} className="shrink-0 mt-1" />
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-tight">Return Policy</p>
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase leading-tight">
+                                            {data.refundPolicy === "no-refunds" ? "All sales final. No returns." : "30-Day Money Back Guarantee."}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <ShieldCheck size={20} className="shrink-0 mt-1" />
+                                    <div>
+                                        <p className="text-xs font-black uppercase tracking-tight">Authentic Product</p>
+                                        <p className="text-[10px] text-neutral-500 font-bold uppercase leading-tight">Verified vendor and original item guarantee.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -521,21 +511,30 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     );
 };
 
+// --- COMPREHENSIVE SKELETON LOADER ---
 export const ProductViewSkeleton = () => {
     return (
-        <div className="px-4 lg:px-12 py-10">
-            <div className="border rounded-sm bg-white overflow-hidden animate-pulse">
-                <div className="w-full h-[400px] md:h-[600px] bg-neutral-100" />
-                <div className="p-6 space-y-4">
-                    <div className="h-10 w-1/2 bg-neutral-100 rounded" />
-                    <div className="h-6 w-1/4 bg-neutral-100 rounded" />
-                </div>
-                <div className="grid grid-cols-6 border-t">
-                    <div className="col-span-4 p-6 space-y-6">
-                        <div className="h-32 w-full bg-neutral-50 rounded" />
-                        <div className="h-64 w-full bg-neutral-50 rounded" />
+        <div className="px-4 lg:px-12 py-10 animate-pulse bg-neutral-50">
+            <div className="max-w-[1600px] mx-auto border-2 border-neutral-200 rounded-sm bg-white overflow-hidden">
+                <div className="w-full h-[600px] bg-neutral-200" />
+                <div className="grid grid-cols-1 lg:grid-cols-6 divide-x-2 divide-neutral-100">
+                    <div className="col-span-4 p-12 space-y-8">
+                        <div className="h-16 w-3/4 bg-neutral-200 rounded-sm" />
+                        <div className="h-20 w-full bg-neutral-100 rounded-sm" />
+                        <div className="space-y-4">
+                            <div className="h-6 w-1/4 bg-neutral-200 rounded-sm" />
+                            <div className="flex gap-4">
+                                <div className="size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-24 bg-neutral-200 rounded-sm" />
+                                <div className="size-24 bg-neutral-200 rounded-sm" />
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-span-2 p-6 border-l bg-neutral-50/30" />
+                    <div className="col-span-2 p-8 bg-neutral-50/50 space-y-6">
+                        <div className="h-14 w-full bg-neutral-200 rounded-sm" />
+                        <div className="h-14 w-full bg-neutral-200 rounded-sm" />
+                        <div className="h-40 w-full bg-neutral-100 rounded-sm" />
+                    </div>
                 </div>
             </div>
         </div>
