@@ -363,7 +363,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                                                     "group flex flex-col items-center gap-2 p-2 border-2 transition-all duration-300 cursor-pointer",
                                                     isSelected 
                                                         ? "border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -translate-y-1" 
-                                                        : "border-transparent opacity-60 hover:opacity-100 hover:border-neutral-200"
+                                                        : "border-transparent hover:opacity-100 hover:border-neutral-200"
                                                 )}
                                             >
                                                 <div className="relative size-24 border-2 border-black overflow-hidden bg-white">
