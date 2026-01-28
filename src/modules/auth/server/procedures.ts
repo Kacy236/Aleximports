@@ -3,6 +3,8 @@ import { headers as getHeaders } from "next/headers";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 import { loginSchema, registerSchema } from "../schemas";
 import { generateAuthCookie } from "../utils";
+import { z } from "zod";
+import { sendVerificationEmail, generateOTP } from "@/lib/email";
 
 /* -----------------------------------------------------------
    PAYSTACK HELPERS
@@ -110,23 +112,26 @@ export const authRouter = createTRPCRouter({
   register: baseProcedure
     .input(registerSchema)
     .mutation(async ({ input, ctx }) => {
-      /* STEP 1 — Check if username already exists */
+      /* STEP 1 — Check if username or email already exists */
       const existing = await ctx.db.find({
         collection: "users",
         limit: 1,
-        where: { username: { equals: input.username } },
+        where: { 
+          or: [
+            { username: { equals: input.username } },
+            { email: { equals: input.email } }
+          ]
+        },
       });
 
       if (existing.docs.length > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Username is already taken",
+          message: "Username or Email is already taken",
         });
       }
 
       /* STEP 2 — Create Paystack Entities */
-      // We do these before creating the user so that if Paystack fails, 
-      // we don't end up with a "broken" user in our database.
       const paystackRecipient = await createPaystackRecipient(
         input.username,
         input.bankCode,
@@ -149,13 +154,17 @@ export const authRouter = createTRPCRouter({
           accountNumber: input.accountNumber,
           accountName: paystackRecipient.account_name,
           paystackRecipientCode: paystackRecipient.recipient_code,
-          paystackSubaccountCode: paystackSub.subaccount_code, // 👈 Used for split payments
+          paystackSubaccountCode: paystackSub.subaccount_code,
           platformFeePercentage: 10,
           paystackDetailsSubmitted: true,
         },
       });
 
-      /* STEP 4 — Create User & Link to Tenant */
+      /* STEP 4 — Prepare Verification Data */
+      const otp = generateOTP();
+      const otpExpires = new Date(Date.now() + 10 * 60000); // 10 minutes
+
+      /* STEP 5 — Create User (Unverified) */
       await ctx.db.create({
         collection: "users",
         data: {
@@ -163,37 +172,31 @@ export const authRouter = createTRPCRouter({
           username: input.username,
           password: input.password,
           tenants: [{ tenant: tenant.id }],
+          isVerified: false,
+          verificationCode: otp,
+          verificationExpires: otpExpires.toISOString(), // Store as ISO string
         },
       });
 
-      /* STEP 5 — Auto-login */
-      const loginData = await ctx.db.login({
-        collection: "users",
-        data: {
-          email: input.email,
-          password: input.password,
-        },
-      });
-
-      if (!loginData.token) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Registration successful, but auto-login failed.",
-        });
+      /* STEP 6 — Send Verification Email */
+      try {
+        await sendVerificationEmail(input.email, otp);
+      } catch (error) {
+        console.error("Failed to send verification email:", error);
       }
 
-      await generateAuthCookie({
-        prefix: ctx.db.config.cookiePrefix,
-        value: loginData.token,
-      });
-
-      return loginData;
+      return {
+        success: true,
+        message: "Registration successful. Please check your email.",
+      };
     }),
 
   login: baseProcedure
     .input(loginSchema)
     .mutation(async ({ input, ctx }) => {
-      const data = await ctx.db.login({
+      /* STEP 1 — Perform initial login to validate credentials */
+      // Note: We are validating email/password here, but not setting the cookie yet
+      const loginAttempt = await ctx.db.login({
         collection: "users",
         data: {
           email: input.email,
@@ -201,18 +204,108 @@ export const authRouter = createTRPCRouter({
         },
       });
 
-      if (!data.token) {
+      if (!loginAttempt.user) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "Invalid email or password",
         });
       }
 
-      await generateAuthCookie({
-        prefix: ctx.db.config.cookiePrefix,
-        value: data.token,
+      /* STEP 2 — Generate and store OTP for every login */
+      const otp = generateOTP();
+      const otpExpires = new Date(Date.now() + 10 * 60000);
+
+      await ctx.db.update({
+        collection: "users",
+        id: loginAttempt.user.id,
+        data: {
+          verificationCode: otp,
+          verificationExpires: otpExpires.toISOString(),
+        },
       });
 
-      return data;
+      /* STEP 3 — Send the code */
+      try {
+        await sendVerificationEmail(input.email, otp);
+      } catch (error) {
+        console.error("Login OTP email failure:", error);
+      }
+
+      /* STEP 4 — Signal the frontend to show OTP screen */
+      return {
+        requiresOTP: true,
+        email: input.email,
+      };
+    }),
+
+  verifyOTP: baseProcedure
+    .input(z.object({ 
+      email: z.string().email(), 
+      code: z.string().length(6),
+      password: z.string(), 
+    }))
+    .mutation(async ({ input, ctx }) => {
+      /* STEP 1 — Find the user */
+      const userResult = await ctx.db.find({
+        collection: "users",
+        where: { email: { equals: input.email } },
+      });
+
+      const user = userResult.docs[0];
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+      }
+
+      /* STEP 2 — Validate Code & Expiry (Type-Safe Fix) */
+      if (user.verificationCode !== input.code) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid code." });
+      }
+
+      // Check if verificationExpires exists before creating Date object
+      const expiryValue = user.verificationExpires;
+      const expiryDate = expiryValue ? new Date(expiryValue) : null;
+
+      if (!expiryDate || new Date() > expiryDate) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Verification code has expired.",
+        });
+      }
+
+      /* STEP 3 — Mark as Verified and clear codes */
+      await ctx.db.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          isVerified: true,
+          verificationCode: null,
+          verificationExpires: null,
+        },
+      });
+
+      /* STEP 4 — Finalize Session */
+      const loginData = await ctx.db.login({
+        collection: "users",
+        data: {
+          email: input.email,
+          password: input.password, 
+        },
+      });
+
+      if (!loginData.token) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Verification successful, but session generation failed.",
+        });
+      }
+
+      /* STEP 5 — Original Cookie Logic */
+      await generateAuthCookie({
+        prefix: ctx.db.config.cookiePrefix,
+        value: loginData.token,
+      });
+
+      return loginData;
     }),
 });

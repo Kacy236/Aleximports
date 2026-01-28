@@ -143,6 +143,12 @@ export interface User {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Check this to manually verify a user.
+   */
+  isVerified?: boolean | null;
+  verificationCode?: string | null;
+  verificationExpires?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -255,13 +261,24 @@ export interface Product {
    * The default price if no variant price is set.
    */
   price: number;
+  category: string | Category;
+  /**
+   * Upload your product image or images. The first image will be the primary image.
+   */
+  images: {
+    image: string | Media;
+    id?: string | null;
+  }[];
   hasVariants?: boolean | null;
+  /**
+   * TIP: Fill out one option, then click the 'Duplicate' icon (three dots) on the top right of the row to quickly create more.
+   */
   variants?:
     | {
         color?: string | null;
         size?: string | null;
         /**
-         * Empty = Base
+         * Empty = Base Price
          */
         variantPrice?: number | null;
         stock: number;
@@ -269,15 +286,7 @@ export interface Product {
         id?: string | null;
       }[]
     | null;
-  category: string | Category;
   tags?: (string | Tag)[] | null;
-  /**
-   * Upload up to 8 images. The first image will be the primary thumbnail.
-   */
-  images: {
-    image: string | Media;
-    id?: string | null;
-  }[];
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   content?: {
     root: {
@@ -460,6 +469,9 @@ export interface UsersSelect<T extends boolean = true> {
         tenant?: T;
         id?: T;
       };
+  isVerified?: T;
+  verificationCode?: T;
+  verificationExpires?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -517,6 +529,13 @@ export interface ProductsSelect<T extends boolean = true> {
   name?: T;
   description?: T;
   price?: T;
+  category?: T;
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
   hasVariants?: T;
   variants?:
     | T
@@ -528,14 +547,7 @@ export interface ProductsSelect<T extends boolean = true> {
         variantImage?: T;
         id?: T;
       };
-  category?: T;
   tags?: T;
-  images?:
-    | T
-    | {
-        image?: T;
-        id?: T;
-      };
   refundPolicy?: T;
   content?: T;
   isPrivate?: T;

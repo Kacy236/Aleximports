@@ -34,7 +34,6 @@ export const Users: CollectionConfig = {
     hidden: ({ user }) => !isSuperAdmin(user),
   },
   auth: {
-    // This is the core fix for logout
     cookies: {
       ...(process.env.NODE_ENV !== "development" && {
         sameSite: "None", 
@@ -69,6 +68,32 @@ export const Users: CollectionConfig = {
         ...(defaultTenantArrayField?.admin || {}),
         position: "sidebar",
       }
-    }
+    },
+    /* -----------------------------------------------------------
+       VERIFICATION FIELDS (New)
+    ----------------------------------------------------------- */
+    {
+      name: 'isVerified',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Check this to manually verify a user.',
+      },
+    },
+    {
+      name: 'verificationCode',
+      type: 'text',
+      admin: {
+        hidden: true, // No need to see this in the admin panel
+      },
+    },
+    {
+      name: 'verificationExpires',
+      type: 'date',
+      admin: {
+        hidden: true,
+      },
+    },
   ],
 };
