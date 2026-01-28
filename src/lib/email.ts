@@ -21,7 +21,7 @@ export const generateOTP = () => {
  */
 export const sendVerificationEmail = async (email: string, code: string) => {
   const mailOptions = {
-    from: `"Your App Name" <${process.env.GMAIL_USER}>`,
+    from: `"Alex imports" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: "Verify your account",
     html: `
